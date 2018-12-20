@@ -17,6 +17,8 @@ accounts and APIs enabled.
 """
 import copy
 
+PROJECT_RESOURCE_NAME = 'project'
+BILLING_RESOURCE_NAME = 'billing'
 
 def generate_config(context):
     """ Entry point for the deployment resources. """
@@ -29,7 +31,7 @@ def generate_config(context):
 
     resources = [
         {
-            'name': 'project',
+            'name': PROJECT_RESOURCE_NAME,
             'type': 'cloudresourcemanager.v1.project',
             'properties':
                 {
@@ -39,7 +41,7 @@ def generate_config(context):
                 }
         },
         {
-            'name': 'billing',
+            'name': BILLING_RESOURCE_NAME,
             'type': 'deploymentmanager.v2.virtual.projectBillingInfo',
             'properties':
                 {
@@ -51,17 +53,18 @@ def generate_config(context):
         }
     ]
 
-    api_resources, api_names_list = activate_apis(context.properties)
+    api_resources = activate_apis(context.properties)
+    api_resource_names = [resource['name'] for resource in api_resources]
     resources.extend(api_resources)
     resources.extend(create_service_accounts(context, project_id))
-    resources.extend(create_bucket(context.properties))
+    resources.extend(create_bucket(context.properties, api_resource_names))
     resources.extend(create_shared_vpc(project_id, context.properties))
 
     if context.properties.get('removeDefaultVPC', True):
-        resources.extend(delete_default_network(api_names_list))
+        resources.extend(delete_default_network(api_resource_names))
 
     if context.properties.get('removeDefaultSA', True):
-        resources.extend(delete_default_service_account(api_names_list))
+        resources.extend(delete_default_service_account(api_resource_names))
 
     return {
         'resources':
@@ -91,50 +94,50 @@ def generate_config(context):
             ]
     }
 
+def bucketed_list(l, bucket_size):
+  """Breaks an input list into multiple lists with a certain bucket size."""
+  n = max(1, bucket_size)
+  return [l[i:i+n] for i in xrange(0, len(l), n)]
+
 
 def activate_apis(properties):
-    """ Resources for API activation. """
-
-    concurrent_api_activation = properties.get('concurrentApiActivation')
+    """Generates resources for API activation. """
     apis = properties.get('activateApis', [])
 
     # Enable the storage-component API if the usage export bucket is enabled.
     if (
-            properties.get('usageExportBucket') and
-            'storage-component.googleapis.com' not in apis
+        properties.get('usageExportBucket') and
+        'storage-component.googleapis.com' not in apis
     ):
-        apis.append('storage-component.googleapis.com')
+      apis.append('storage-component.googleapis.com')
 
     resources = []
-    api_names_list = ['billing']
-    for api in properties.get('activateApis', []):
-        depends_on = ['billing']
-        # Serialize activation of all APIs by making apis[n]
-        # depend on apis[n-1].
-        if resources and not concurrent_api_activation:
-            depends_on.append(resources[-1]['name'])
 
-        api_name = 'api-' + api
-        api_names_list.append(api_name)
-        resources.append(
-            {
-                'name': api_name,
-                'type': 'deploymentmanager.v2.virtual.enableService',
-                'metadata': {
-                    'dependsOn': depends_on
-                },
-                'properties':
-                    {
-                        'consumerId': 'project:' + '$(ref.project.projectId)',
-                        'serviceName': api
-                    }
-            }
-        )
+    # Activate APIs in batches of 20 at a time using the "batchEnable" service
+    # usage API method. The magic number 20 is part of the batchEnable API
+    # contract; see
+    # https://cloud.google.com/service-usage/docs/reference/rest/v1/services/batchEnable.
+    api_buckets = bucketed_list(apis, 20)
 
-    # Return the API resources to enable other resources to use them as
-    # dependencies, to ensure that they are created first. For example,
-    # the default VPC or service account.
-    return resources, api_names_list
+    for i in range(0, len(api_buckets)):
+      api_names = api_buckets[i]
+
+      resources.append({
+          'name': 'api-{}'.format(i),
+          'action': (
+              'gcp-types/serviceusage-v1beta1:' +
+              'serviceusage.services.batchEnable'),
+          'properties': {
+              'parent': 'projects/$(ref.project.projectNumber)',
+              'serviceIds': api_names,
+          },
+          'metadata': {
+              # The only thing needed to activate APIs is billing to be enabled.
+              'dependsOn': [BILLING_RESOURCE_NAME],
+          }
+      })
+
+    return resources
 
 
 def create_project_iam(dependencies, role_member_list):
@@ -224,7 +227,7 @@ def create_service_accounts(context, project_id):
     service_account_dep = []
     policies_to_add = []
 
-    for service_account in context.properties['serviceAccounts']:
+    for service_account in context.properties.get('serviceAccounts', []):
         account_id = service_account['accountId']
         display_name = service_account.get('displayName', account_id)
         sa_name = 'serviceAccount:{}@{}.iam.gserviceaccount.com'.format(
@@ -261,7 +264,7 @@ def create_service_accounts(context, project_id):
         )
 
     # Build the group bindings for the project IAM permissions.
-    for group in context.properties['groups']:
+    for group in context.properties.get('groups', []):
         group_name = 'group:{}'.format(group['name'])
         for role in group['roles']:
             policies_to_add.append({'role': role, 'members': [group_name]})
@@ -284,7 +287,7 @@ def create_service_accounts(context, project_id):
     return resources
 
 
-def create_bucket(properties):
+def create_bucket(properties, api_names_list):
     """ Resources for the usage export bucket. """
 
     resources = []
@@ -303,7 +306,9 @@ def create_bucket(properties):
                     },
                 'metadata':
                     {
-                        'dependsOn': ['api-storage-component.googleapis.com']
+                        # Only create the bucket once all APIs have been
+                        # activated.
+                        'dependsOn': api_names_list
                     }
             }
         )
