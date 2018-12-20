@@ -1,0 +1,68 @@
+#
+# Schema definition for the FireCloud GCP Project template.
+#
+
+info:
+  title: FireCloud GCP Project
+  author: Broad Institute
+  description: |
+    Supports creation and provisioning of a FireCloud GCP project, including
+    IAM permissions, API activation, and networking config.
+
+imports:
+  - path: templates/firewall.py
+  - path: templates/network.py
+  - path: templates/project.py
+
+required:
+  - billingAccountId
+  - projectId
+
+properties:
+  billingAccountId:
+    type: string
+    description: |
+      The ID of the billing account to attach to the projects.
+      For example, 00E12A-0AB8B2-078CE8
+  highSecurityNetwork:
+    type: boolean
+    description: |
+      When true, the GCP project will be configured with settings necessary
+      for a high-security networking environment. This includes turning on
+      VPC flow logs, removing the default VPC network, disabling
+      auto subnet creation, and setting restrictive firewall rules.
+  labels:
+    type: object
+    description: |
+      Optional key-value pairs which will be stored as resource labels on the
+      created project. Example: "project: 'all-of-us'"
+  projectName:
+    type: string
+    description: |
+      The project name. If provided, configures the project to have a
+      human-readable name that is different from the project ID.
+  parent:
+    type: object
+    description: |
+      Describes the parent GCP organization or folder for the project. If empty,
+      the project will be created in the default FireCloud organization.
+    properties:
+      id:
+        type: [integer, string]
+        description: |
+          The ID of the project's parent.
+      type:
+        type: string
+        decription: The parent type (organization or folder).
+        enum:
+          - folder
+          - organization
+        default: organization
+  projectId:
+    type: string
+    pattern: ^[a-z][a-z0-9-]{5,28}[a-z0-9]$
+    description: |
+      The unique, user-assigned ID of the Project. It must be 6 to 30 lowercase
+      letters, digits, or hyphens. It must start with a letter. Trailing
+      hyphens are prohibited. Read-only after creation.
+      Example: tokyo-rain-123
