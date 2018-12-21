@@ -15,32 +15,30 @@
 
 
 def generate_config(context):
-    """ Entry point for the deployment resources. """
-    resources = []
+  """ Entry point for the deployment resources. """
+  resources = []
 
-    for rule in context.properties.get('rules', []):
-      # Network and project must be specified in the top-level properties.
-      rule['network'] = context.properties['network']
-      rule['project'] = context.properties['projectId']
-      rule['priority'] = context.properties.get('priority', 65534)
+  for rule in context.properties.get('rules', []):
+    # Network and project must be specified in the top-level properties.
+    rule['network'] = context.properties['network']
+    rule['project'] = context.properties['projectId']
+    rule['priority'] = context.properties.get('priority', 65534)
 
-      resource = {
-          'name': rule['name'],
-          'type': 'gcp-types/compute-v1:firewalls',
-          'properties': rule,
-      }
-      resources.append(resource)
+    resource = {
+        'name': rule['name'],
+        'type': 'gcp-types/compute-v1:firewalls',
+        'properties': rule,
+    }
+    resources.append(resource)
 
-      # If a dependsOn property was passed in, the firewall should depends on
-      # that.
-      if 'dependsOn' in context.properties:
-        resource['metadata'] = {
-          'dependsOn': context.properties['dependsOn']
-        }
+    # If a dependsOn property was passed in, the firewall should depends on
+    # that.
+    if 'dependsOn' in context.properties:
+      resource['metadata'] = {'dependsOn': context.properties['dependsOn']}
 
-    outputs = [{
-        'name': 'resourceNames',
-        'value': [resource['name'] for resource in resources]
-    }]
+  outputs = [{
+      'name': 'resourceNames',
+      'value': [resource['name'] for resource in resources]
+  }]
 
-    return {'resources': resources, 'outputs': outputs}
+  return {'resources': resources, 'outputs': outputs}

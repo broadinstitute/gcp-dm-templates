@@ -72,51 +72,59 @@ def create_firewall(context):
       'type': 'templates/firewall.py',
       'name': 'fc-firewall',
       'properties': {
-          'projectId': '$(ref.fc-project.projectId)',
-          'network': '$(ref.fc-network.selfLink)',
-          'dependsOn': '$(ref.fc-network.resourceNames)',
-          'rules': [{
-              'name': 'allow-icmp',
-              'description': 'Allow ICMP from anywhere.',
-              'allowed': [{
-                  'IPProtocol': 'icmp'
-              }],
-              'direction': 'INGRESS',
-              'sourceRanges': ['0.0.0.0/0'],
-              'priority': 65534,
-          }, {
-              'name': 'allow-internal',
-              'description': 'Allow internal traffic on the network.',
-              'allowed': [{
-                  'IPProtocol': 'icmp',
-              }, {
-                  'IPProtocol': 'tcp',
-                  'ports': ['0-65535'],
-              }, {
-                  'IPProtocol': 'udp',
-                  'ports': ['0-65535'],
-              }],
-              'direction': 'INGRESS',
-              'sourceRanges': ['10.128.0.0/9'],
-              'priority': 65534,
-          }, {
-              'name': 'leonardo-ssl',
-              'description': 'Allow SSL traffic from Leonardo-managed VMs.',
-              'allowed': [{
-                  'IPProtocol': 'tcp',
-                  'ports': ['443'],
-              }],
-              'direction': 'INGRESS',
-              'sourceRanges': ['0.0.0.0/0'],
-              'targetTags': ['leonardo'],
-          }],
+          'projectId':
+              '$(ref.fc-project.projectId)',
+          'network':
+              '$(ref.fc-network.selfLink)',
+          'dependsOn':
+              '$(ref.fc-network.resourceNames)',
+          'rules': [
+              {
+                  'name': 'allow-icmp',
+                  'description': 'Allow ICMP from anywhere.',
+                  'allowed': [{
+                      'IPProtocol': 'icmp',
+                  }],
+                  'direction': 'INGRESS',
+                  'sourceRanges': ['0.0.0.0/0'],
+                  'priority': 65534,
+              },
+              {
+                  'name': 'allow-internal',
+                  'description': 'Allow internal traffic on the network.',
+                  'allowed': [{
+                      'IPProtocol': 'icmp',
+                  }, {
+                      'IPProtocol': 'tcp',
+                      'ports': ['0-65535'],
+                  }, {
+                      'IPProtocol': 'udp',
+                      'ports': ['0-65535'],
+                  }],
+                  'direction': 'INGRESS',
+                  'sourceRanges': ['10.128.0.0/9'],
+                  'priority': 65534,
+              },
+              {
+                  'name': 'leonardo-ssl',
+                  'description': 'Allow SSL traffic from Leonardo-managed VMs.',
+                  'allowed': [{
+                      'IPProtocol': 'tcp',
+                      'ports': ['443'],
+                  }],
+                  'direction': 'INGRESS',
+                  'sourceRanges': ['0.0.0.0/0'],
+                  'targetTags': ['leonardo'],
+              },
+          ],
       },
   }]
 
+
 def create_iam_policies(context):
   """Creates a list of IAM policies for the new project."""
-  organization_id = context.properties.get(
-      'parentOrganization', FIRECLOUD_ORGANIZATION_ID)
+  organization_id = context.properties.get('parentOrganization',
+                                           FIRECLOUD_ORGANIZATION_ID)
   owners_and_viewers = [
       'group:{}'.format(context.properties['projectOwnersGroup']),
       'group:{}'.format(context.properties['projectViewersGroup']),
@@ -149,37 +157,44 @@ def create_iam_policies(context):
   #  ]
   # }
 
-  return [{
-      # Rawls requires project editor permission to handle transactional IAM
-      # updates to the project.
-      #
-      # Cromwell requires project editor permission because _____ ?
-      'role': 'roles/editor',
-      'members': [
-          'serviceAccount:rawls-prod@broad-dsde-prod.iam.gserviceaccount.com',
-          'serviceAccount:cromwell-prod@broad-dsde-prod.iam.gserviceaccount.com',
-      ]
-  }, {
-      # Only FireCloud project owners are allowed to view the GCP project.
-      'role': 'roles/viewer',
-      'members': owners_only,
-  }, {
-      # Owners can manage billing on the GCP project (to switch out billing
-      # accounts).
-      'role': 'roles/billing.projectManager',
-      'members': owners_only,
-  }, {
-      # Owners & viewers are allowed to spin up PAPI nodes in the
-      # project (required for creating Leonardo notebooks).
-      'role': 'roles/genomics.pipelinesRunner',
-      'members': owners_and_viewers,
-  }, {
-      # Owners & viewers are allowed to run BigQuery queries in the project
-      # (required for running BQ queries within notebooks).
-      'role': 'roles/bigquery.jobUser',
-      'members': owners_and_viewers,
-  },
+  return [
+      {
+          # Rawls requires project editor permission to handle transactional IAM
+          # updates to the project.
+          #
+          # Cromwell requires project editor permission because _____ ?
+          'role':
+              'roles/editor',
+          'members': [
+              'serviceAccount:rawls-prod@broad-dsde-prod.iam.gserviceaccount.com',
+              'serviceAccount:cromwell-prod@broad-dsde-prod.iam.gserviceaccount.com',
+          ]
+      },
+      {
+          # Only FireCloud project owners are allowed to view the GCP project.
+          'role': 'roles/viewer',
+          'members': owners_only,
+      },
+      {
+          # Owners can manage billing on the GCP project (to switch out billing
+          # accounts).
+          'role': 'roles/billing.projectManager',
+          'members': owners_only,
+      },
+      {
+          # Owners & viewers are allowed to spin up PAPI nodes in the
+          # project (required for creating Leonardo notebooks).
+          'role': 'roles/genomics.pipelinesRunner',
+          'members': owners_and_viewers,
+      },
+      {
+          # Owners & viewers are allowed to run BigQuery queries in the project
+          # (required for running BQ queries within notebooks).
+          'role': 'roles/bigquery.jobUser',
+          'members': owners_and_viewers,
+      },
   ]
+
 
 def create_pubsub_notification(context, depends_on, status_string):
   """Creates a resource to publish a message upon deployment completion.
@@ -198,12 +213,13 @@ def create_pubsub_notification(context, depends_on, status_string):
       'name': 'pubsub-notification-{}'.format(status_string),
       'action': 'gcp-types/pubsub-v1:pubsub.projects.topics.publish',
       'properties': {
-          'topic': context.properties['pubsubTopic'],
+          'topic':
+              context.properties['pubsubTopic'],
           'messages': [{
-            'attributes': {
-                'projectId': context.properties['projectId'],
-                'status': status_string,
-            }
+              'attributes': {
+                  'projectId': context.properties['projectId'],
+                  'status': status_string,
+              }
           }]
       },
       'metadata': {
@@ -223,11 +239,12 @@ def generate_config(context):
 
   # Create an initial 'STARTED' pubsub notification.
   if 'pubsubTopic' in context.properties:
-    resources.extend(create_pubsub_notification(
-        context,
-        depends_on=[],
-        status_string='STARTED',
-    ))
+    resources.extend(
+        create_pubsub_notification(
+            context,
+            depends_on=[],
+            status_string='STARTED',
+        ))
 
   # Required properties.
   billing_account_id = context.properties['billingAccountId']
@@ -239,12 +256,12 @@ def generate_config(context):
   if 'parentFolder' in context.properties:
     parent_obj = {
         'id': context.properties['parentFolder'],
-        'type': 'folder'
+        'type': 'folder',
     }
   elif 'parentOrganization' in context.properties:
     parent_obj = {
         'id': context.properties['parentOrganization'],
-        'type': 'organization'
+        'type': 'organization',
     }
   else:
     parent_obj = {
@@ -289,17 +306,17 @@ def generate_config(context):
     resources.extend(create_firewall(context))
 
   if 'pubsubTopic' in context.properties:
-    resources.extend(create_pubsub_notification(
-        context,
-        # This is somewhat hacky, but we can't simply collect the name of each
-        # collected resource since template call nodes aren't "real" resources
-        # that can be part of a dependsOn stanza. So instead, we collect the
-        # names of all resources that are output by the network (which itself
-        # depends on the project). It doesn't seem to be possible to concatenate
-        # dependsOn arrays within the reference syntax, otherwise we could make
-        # this depend explicitly on all resources from the template nodes.
-        depends_on= '$(ref.fc-network.resourceNames)',
-        status_string='COMPLETED'
-    ))
+    resources.extend(
+        create_pubsub_notification(
+            context,
+            # This is somewhat hacky, but we can't simply collect the name of each
+            # collected resource since template call nodes aren't "real" resources
+            # that can be part of a dependsOn stanza. So instead, we collect the
+            # names of all resources that are output by the network (which itself
+            # depends on the project). It doesn't seem to be possible to concatenate
+            # dependsOn arrays within the reference syntax, otherwise we could make
+            # this depend explicitly on all resources from the template nodes.
+            depends_on='$(ref.fc-network.resourceNames)',
+            status_string='COMPLETED'))
 
   return {'resources': resources}
