@@ -15,70 +15,68 @@
 
 
 def generate_config(context):
-    """ Entry point for the deployment resources. """
+  """ Entry point for the deployment resources. """
 
-    name = context.properties['name']
-    network_self_link = '$(ref.{}.selfLink)'.format(name)
+  name = context.properties['name']
+  network_self_link = '$(ref.{}.selfLink)'.format(name)
 
-    resources = []
+  resources = []
 
-    network_resource = {
-        'name': name,
-        'type': 'gcp-types/compute-v1:networks',
-        'properties': {
-            'name': name,
-            'project': context.properties['projectId'],
-            'autoCreateSubnetworks': context.properties.get(
-                'autoCreateSubnetworks', False),
-        },
+  network_resource = {
+      'name': name,
+      'type': 'gcp-types/compute-v1:networks',
+      'properties': {
+          'name':
+              name,
+          'project':
+              context.properties['projectId'],
+          'autoCreateSubnetworks':
+              context.properties.get('autoCreateSubnetworks', False),
+      },
+  }
+  resources.append(network_resource)
+
+  # If a dependsOn property was passed in, the network should depend on that.
+  if 'dependsOn' in context.properties:
+    network_resource['metadata'] = {
+        'dependsOn': context.properties['dependsOn']
     }
-    resources.append(network_resource)
 
-    # If a dependsOn property was passed in, the network should depend on that.
-    if 'dependsOn' in context.properties:
-      network_resource['metadata'] = {
-          'dependsOn': context.properties['dependsOn']
-      }
+  # Create the network within a specified project if the property is
+  # non-empty.
+  if 'projectId' in context.properties:
+    network_resource['properties']['project'] = (
+        context.properties['projectId'])
 
-    # Create the network within a specified project if the property is
+  for subnetwork in context.properties.get('subnetworks', []):
+    subnetwork['network'] = network_self_link
+
+    # All subnetworks  depend on the parent network resource.
+    subnetwork['dependsOn'] = [name]
+
+    # Create the subnetwork within the specified project if the property is
     # non-empty.
     if 'projectId' in context.properties:
-      network_resource['properties']['project'] = (
-          context.properties['projectId'])
+      subnetwork['projectId'] = context.properties['projectId']
 
-    for subnetwork in context.properties.get('subnetworks', []):
-        subnetwork['network'] = network_self_link
+    resources.append({
+        'name': subnetwork['name'],
+        'type': 'subnetwork.py',
+        'properties': subnetwork
+    })
 
-        # All subnetworks  depend on the parent network resource.
-        subnetwork['dependsOn'] = [name]
-
-        # Create the subnetwork within the specified project if the property is
-        # non-empty.
-        if 'projectId' in context.properties:
-          subnetwork['projectId'] = context.properties['projectId']
-
-        resources.append({
-            'name': subnetwork['name'],
-            'type': 'subnetwork.py',
-            'properties': subnetwork
-        })
-
-    return {
-        'resources':
-            resources,
-        'outputs':
-            [
-                {
-                    'name': 'name',
-                    'value': name
-                },
-                {
-                    'name': 'selfLink',
-                    'value': network_self_link
-                },
-                {
-                    'name': 'resourceNames',
-                    'value': [resource['name'] for resource in resources]
-                }
-            ]
-    }
+  return {
+      'resources':
+          resources,
+      'outputs': [{
+          'name': 'name',
+          'value': name
+      }, {
+          'name': 'selfLink',
+          'value': network_self_link
+      },
+                  {
+                      'name': 'resourceNames',
+                      'value': [resource['name'] for resource in resources]
+                  }]
+  }
