@@ -36,28 +36,16 @@ properties:
     description: |
       Optional key-value pairs which will be stored as resource labels on the
       created project. Example: "project: 'all-of-us'"
-  projectName:
-    type: string
+  parentOrganization:
+    type: [integer, string]
     description: |
-      The project name. If provided, configures the project to have a
-      human-readable name that is different from the project ID.
-  parent:
-    type: object
+      The parent organization ID. If empty, the default FireCloud
+      organization ID will be used.
+  parentFolder:
+    type: [integer, string]
     description: |
-      Describes the parent GCP organization or folder for the project. If empty,
-      the project will be created in the default FireCloud organization.
-    properties:
-      id:
-        type: [integer, string]
-        description: |
-          The ID of the project's parent.
-      type:
-        type: string
-        decription: The parent type (organization or folder).
-        enum:
-          - folder
-          - organization
-        default: organization
+      The parent folder ID. If non-empty, the project will be created inside
+      the folder instead of at the organization root level.
   projectId:
     type: string
     pattern: ^[a-z][a-z0-9-]{5,28}[a-z0-9]$
@@ -66,3 +54,30 @@ properties:
       letters, digits, or hyphens. It must start with a letter. Trailing
       hyphens are prohibited. Read-only after creation.
       Example: tokyo-rain-123
+  projectName:
+    type: string
+    description: |
+      The project name. If provided, configures the project to have a
+      human-readable name that is different from the project ID.
+  projectOwnersGroup:
+    type: string
+    description: |
+      The email address of the project-owners proxy group. This group is granted
+      the same permissions as the viewers group, plus project.viewer and
+      billing.projectManager.
+  projectViewersGroup:
+    type: string
+    description: |
+      The email address of the project-viewers proxy group. This group is given
+      permissions required to run compute & bigquery queries within the created
+      project. Specifically, bigquery.jobUser, genomics.pipelinesRunner, and
+      requesterPays.
+  pubsubTopic:
+    type: string
+    description: |
+      The topic path to publish deployment start and completion message to.
+      The service account being used to run deployment manager actions must have
+      permissions to publish to this topic. The start message will have an
+      attribute {'status':'STARTED'} and the completion message will have an
+      attribute {'status':'COMPLETED'}. Both messages will have an attribute
+      {'projectId':PROJECT_ID} with the ID of the to-be-created project.
