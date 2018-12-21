@@ -123,20 +123,13 @@ def create_firewall(context):
 
 def create_iam_policies(context):
   """Creates a list of IAM policies for the new project."""
-  organization_id = context.properties.get('parentOrganization',
-                                           FIRECLOUD_ORGANIZATION_ID)
-  owners_and_viewers = [
-      'group:{}'.format(context.properties['projectOwnersGroup']),
-      'group:{}'.format(context.properties['projectViewersGroup']),
-  ]
-  owners_only = [
-      'group:{}'.format(context.properties['projectOwnersGroup']),
-  ]
-
   # TODO: handle the RequesterPays role (which has slightly different names in
   # different orgs) in an elegant way.
   #
   # Should look something like:
+  #
+  # organization_id = context.properties.get('parentOrganization',
+  #                                          FIRECLOUD_ORGANIZATION_ID)
   # {
   #   # Owners & viewers are given the custom RequesterPays role to be able to
   #   # pay for their own GCS bucket access.
@@ -157,43 +150,64 @@ def create_iam_policies(context):
   #  ]
   # }
 
-  return [
-      {
-          # Rawls requires project editor permission to handle transactional IAM
-          # updates to the project.
-          #
-          # Cromwell requires project editor permission because _____ ?
-          'role':
-              'roles/editor',
-          'members': [
-              'serviceAccount:rawls-prod@broad-dsde-prod.iam.gserviceaccount.com',
-              'serviceAccount:cromwell-prod@broad-dsde-prod.iam.gserviceaccount.com',
-          ]
-      },
-      {
-          # Only FireCloud project owners are allowed to view the GCP project.
-          'role': 'roles/viewer',
-          'members': owners_only,
-      },
-      {
-          # Owners can manage billing on the GCP project (to switch out billing
-          # accounts).
-          'role': 'roles/billing.projectManager',
-          'members': owners_only,
-      },
-      {
-          # Owners & viewers are allowed to spin up PAPI nodes in the
-          # project (required for creating Leonardo notebooks).
-          'role': 'roles/genomics.pipelinesRunner',
-          'members': owners_and_viewers,
-      },
-      {
-          # Owners & viewers are allowed to run BigQuery queries in the project
-          # (required for running BQ queries within notebooks).
-          'role': 'roles/bigquery.jobUser',
-          'members': owners_and_viewers,
-      },
-  ]
+  owners_and_viewers = []
+  owners_only = []
+
+  if 'projectOwnersGroup' in context.properties:
+    owners_and_viewers.append('group:{}'.format(
+        context.properties['projectOwnersGroup']))
+    owners_only.append('group:{}'.format(
+        context.properties['projectOwnersGroup']))
+
+  if 'projectViewersGroup' in context.properties:
+    owners_and_viewers.append('group:{}'.format(
+        context.properties['projectViewersGroup']))
+
+  policies = [{
+      # Rawls requires project editor permission to handle transactional IAM
+      # updates to the project.
+      #
+      # Cromwell requires project editor permission because _____ ?
+      'role':
+          'roles/editor',
+      'members': [
+          'serviceAccount:rawls-prod@broad-dsde-prod.iam.gserviceaccount.com',
+          'serviceAccount:cromwell-prod@broad-dsde-prod.iam.gserviceaccount.com',
+      ]
+  }]
+
+  if owners_only:
+    policies.extend([
+        {
+            # Only FireCloud project owners are allowed to view the GCP project.
+            'role': 'roles/viewer',
+            'members': owners_only,
+        },
+        {
+            # Owners can manage billing on the GCP project (to switch out billing
+            # accounts).
+            'role': 'roles/billing.projectManager',
+            'members': owners_only,
+        },
+    ])
+
+  if owners_and_viewers:
+    policies.extend([
+        {
+            # Owners & viewers are allowed to spin up PAPI nodes in the
+            # project (required for creating Leonardo notebooks).
+            'role': 'roles/genomics.pipelinesRunner',
+            'members': owners_and_viewers,
+        },
+        {
+            # Owners & viewers are allowed to run BigQuery queries in the project
+            # (required for running BQ queries within notebooks).
+            'role': 'roles/bigquery.jobUser',
+            'members': owners_and_viewers,
+        },
+    ])
+
+  return policies
 
 
 def create_pubsub_notification(context, depends_on, status_string):
