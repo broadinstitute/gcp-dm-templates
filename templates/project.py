@@ -17,21 +17,18 @@ accounts and APIs enabled.
 """
 import copy
 
-PROJECT_RESOURCE_NAME = 'project'
-BILLING_RESOURCE_NAME = 'billing'
-
-def generate_config(context):
+def GenerateConfig(context):
     """ Entry point for the deployment resources. """
 
-    project_id = context.properties.get('projectId', context.env['name'])
-    project_name = context.properties.get('name', context.env['name'])
+    project_id = context.properties.get('projectId')
+    project_name = context.properties.get('name', project_id)
 
     # Ensure that the parent ID is a string.
     context.properties['parent']['id'] = str(context.properties['parent']['id'])
 
     resources = [
         {
-            'name': PROJECT_RESOURCE_NAME,
+            'name': 'project',
             'type': 'cloudresourcemanager.v1.project',
             'properties':
                 {
@@ -41,7 +38,7 @@ def generate_config(context):
                 }
         },
         {
-            'name': BILLING_RESOURCE_NAME,
+            'name': 'billing',
             'type': 'deploymentmanager.v2.virtual.projectBillingInfo',
             'properties':
                 {
@@ -54,12 +51,12 @@ def generate_config(context):
         }
     ]
 
-    api_resources = activate_apis(context.properties)
+    resources.extend(create_iam_policies(context))
+
+    api_resources = activate_apis(context)
     api_resource_names = [resource['name'] for resource in api_resources]
     resources.extend(api_resources)
-    resources.extend(create_service_accounts(context, project_id))
-    resources.extend(create_bucket(context.properties, api_resource_names))
-    resources.extend(create_shared_vpc(project_id, context.properties))
+    resources.extend(create_bucket(context, api_resource_names))
 
     if context.properties.get('removeDefaultVPC', True):
         resources.extend(delete_default_network(api_resource_names))
@@ -81,16 +78,8 @@ def generate_config(context):
                     'value': '$(ref.project.projectId)-usage-export'
                 },
                 {
-                    'name':
-                        'serviceAccountDisplayName',
-                    'value':
-                        '$(ref.project.projectNumber)@cloudservices.gserviceaccount.com'  # pylint: disable=line-too-long
-                },
-                {
-                    'name':
-                        'resources',
-                    'value':
-                        [resource['name'] for resource in resources]
+                    'name': 'resourceNames',
+                    'value': [resource['name'] for resource in resources]
                 }
             ]
     }
@@ -101,13 +90,13 @@ def bucketed_list(l, bucket_size):
   return [l[i:i+n] for i in xrange(0, len(l), n)]
 
 
-def activate_apis(properties):
+def activate_apis(context):
     """Generates resources for API activation. """
-    apis = properties.get('activateApis', [])
+    apis = context.properties.get('activateApis', [])
 
     # Enable the storage-component API if the usage export bucket is enabled.
     if (
-        properties.get('usageExportBucket') and
+        context.properties.get('usageExportBucket') and
         'storage-component.googleapis.com' not in apis
     ):
       apis.append('storage-component.googleapis.com')
@@ -134,18 +123,19 @@ def activate_apis(properties):
           },
           'metadata': {
               # The only thing needed to activate APIs is billing to be enabled.
-              'dependsOn': [BILLING_RESOURCE_NAME],
+              'dependsOn': ['billing'],
           }
       })
 
     return resources
 
 
-def create_project_iam(dependencies, role_member_list):
+def create_iam_policies(context):
     """ Grant the shared project IAM permissions. """
+    if 'iamPolicies' not in context.properties:
+      return []
 
-    policies_to_add = role_member_list
-    resources = [
+    return [
         {
             # Get the IAM policy first, so as not to remove
             # any existing bindings.
@@ -156,7 +146,7 @@ def create_project_iam(dependencies, role_member_list):
             },
             'metadata':
                 {
-                    'dependsOn': dependencies,
+                    'dependsOn': ['project'],
                     'runtimePolicy': ['UPDATE_ALWAYS']
                 }
         },
@@ -171,128 +161,20 @@ def create_project_iam(dependencies, role_member_list):
                     'policy': '$(ref.get-iam-policy)',
                     'gcpIamPolicyPatch':
                         {
-                            'add': policies_to_add
+                            'add': context.properties['iamPolicies']
                         }
-                }
+                },
+            'metadata': {
+              'dependsOn': ['get-iam-policy']
+            }
         }
     ]
 
-    return resources
 
-
-def create_shared_vpc_subnet_iam(context, dependencies, members_list):
-    """ Grant the shared VPC subnet IAM permissions to Service Accounts. """
-
-    resources = []
-    if (
-            context.properties.get('sharedVPCSubnets') and
-            context.properties.get('sharedVPC')
-    ):
-        # Grant the Service Accounts access to the shared VPC subnets.
-        # Note that, until there is a subnetwork IAM patch support,
-        # setIamPolicy will overwrite any existing policies on the subnet.
-        for i, subnet in enumerate(
-                context.properties.get('sharedVPCSubnets'), 1
-            ):
-            resources.append(
-                {
-                    'name': 'add-vpc-subnet-iam-policy-{}'.format(i),
-                    'type': 'gcp-types/compute-beta:compute.subnetworks.setIamPolicy',  # pylint: disable=line-too-long
-                    'metadata':
-                        {
-                            'dependsOn': dependencies,
-                        },
-                    'properties':
-                        {
-                            'name': subnet['subnetId'],
-                            'project': context.properties['sharedVPC'],
-                            'region': subnet['region'],
-                            'bindings': [
-                                {
-                                    'role': 'roles/compute.networkUser',
-                                    'members': members_list
-                                }
-                            ]
-                        }
-                }
-            )
-
-    return resources
-
-
-def create_service_accounts(context, project_id):
-    """ Create Service Accounts and grant project IAM permissions. """
-
-    resources = []
-    network_list = ['serviceAccount:$(ref.project.projectNumber)@cloudservices.gserviceaccount.com'] # pylint: disable=line-too-long
-    service_account_dep = []
-    policies_to_add = []
-
-    for service_account in context.properties.get('serviceAccounts', []):
-        account_id = service_account['accountId']
-        display_name = service_account.get('displayName', account_id)
-        sa_name = 'serviceAccount:{}@{}.iam.gserviceaccount.com'.format(
-            account_id,
-            project_id
-        )
-
-        # Check if the member needs shared VPC permissions. Put in
-        # a list to grant the shared VPC subnet IAM permissions.
-        if service_account.get('networkAccess'):
-            network_list.append(sa_name)
-
-        # Build the service account bindings for the project IAM permissions.
-        for role in service_account['roles']:
-            policies_to_add.append({'role': role, 'members': [sa_name]})
-
-        # Build a list of SA resources to be used as a dependency
-        # for permission granting.
-        name = 'service-account-' + account_id
-        service_account_dep.append(name)
-
-        # Create the service account resource.
-        resources.append(
-            {
-                'name': name,
-                'type': 'iam.v1.serviceAccount',
-                'properties':
-                    {
-                        'accountId': account_id,
-                        'displayName': display_name,
-                        'projectId': '$(ref.project.projectId)'
-                    }
-            }
-        )
-
-    # Build the group bindings for the project IAM permissions.
-    for group in context.properties.get('groups', []):
-        group_name = 'group:{}'.format(group['name'])
-        for role in group['roles']:
-            policies_to_add.append({'role': role, 'members': [group_name]})
-
-    # Create the project IAM permissions.
-    if policies_to_add:
-        iam = create_project_iam(service_account_dep, policies_to_add)
-        resources.extend(iam)
-
-    if not context.properties.get('sharedVPCHost'):
-        # Create the shared VPC subnet IAM permissions.
-        resources.extend(
-            create_shared_vpc_subnet_iam(
-                context,
-                service_account_dep,
-                network_list
-            )
-        )
-
-    return resources
-
-
-def create_bucket(properties, api_names_list):
+def create_bucket(context, api_names_list):
     """ Resources for the usage export bucket. """
-
     resources = []
-    if properties.get('usageExportBucket'):
+    if context.properties.get('usageExportBucket'):
         bucket_name = '$(ref.project.projectId)-usage-export'
 
         # Create the bucket.
@@ -328,48 +210,6 @@ def create_bucket(properties, api_names_list):
                     },
                 'metadata': {
                     'dependsOn': ['create-usage-export-bucket']
-                }
-            }
-        )
-
-    return resources
-
-
-def create_shared_vpc(project_id, properties):
-    """ Configure the project Shared VPC properties. """
-
-    resources = []
-
-    service_project = properties.get('sharedVPC')
-    if service_project:
-        resources.append(
-            {
-                'name': project_id + '-attach-xpn-service-' + service_project,
-                'type': 'compute.beta.xpnResource',
-                'metadata': {
-                    'dependsOn': ['api-compute.googleapis.com']
-                },
-                'properties':
-                    {
-                        'project': service_project,
-                        'xpnResource':
-                            {
-                                'id': '$(ref.project.projectId)',
-                                'type': 'PROJECT',
-                            }
-                    }
-            }
-        )
-    elif properties.get('sharedVPCHost'):
-        resources.append(
-            {
-                'name': project_id + '-xpn-host',
-                'type': 'compute.beta.xpnHost',
-                'metadata': {
-                    'dependsOn': ['api-compute.googleapis.com']
-                },
-                'properties': {
-                    'project': '$(ref.project.projectId)'
                 }
             }
         )
@@ -466,7 +306,7 @@ def delete_default_service_account(api_names_list):
             'name': 'delete-default-sa',
             'action': 'gcp-types/iam-v1:iam.projects.serviceAccounts.delete',
             'metadata':
-                {
+            {
                     'dependsOn': api_names_list,
                     'runtimePolicy': ['CREATE']
                 },
