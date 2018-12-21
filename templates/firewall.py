@@ -14,50 +14,33 @@
 """ This template creates firewall rules for a network. """
 
 
-def get_network(properties):
-    """ Gets a network name. """
-
-    network_name = properties.get('network')
-    if network_name:
-        is_self_link = '/' in network_name or '.' in network_name
-
-        if is_self_link:
-            network_url = network_name
-        else:
-            network_url = 'global/networks/{}'.format(network_name)
-
-    return network_url
-
-
 def generate_config(context):
     """ Entry point for the deployment resources. """
-
-    project = context.env['project']
-    network = context.properties.get('network')
-
     resources = []
-    out = {}
-    for i, rule in enumerate(context.properties['rules'], 1000):
-        # Use VPC if specified in the properties. Otherwise, specify
-        # the network URL in the config. If the network is not specified in
-        # the config, the API defaults to 'global/networks/default'.
-        if network and not rule.get('network'):
-            rule['network'] = get_network(context.properties)
 
-        rule['priority'] = rule.get('priority', i)
-        resources.append(
-            {
-                'name': rule['name'],
-                'type': 'compute.beta.firewall',
-                'properties': rule,
-            }
-        )
+    for rule in context.properties.get('rules', []):
+      # Network and project must be specified in the top-level properties.
+      rule['network'] = context.properties['network']
+      rule['project'] = context.properties['projectId']
+      rule['priority'] = context.properties.get('priority', 65534)
 
-        out[rule['name']] = {
-            'selfLink': '$(ref.' + rule['name'] + '.selfLink)',
-            'creationTimestamp': '$(ref.' + rule['name'] + '.creationTimestamp)',
+      resource = {
+          'name': rule['name'],
+          'type': 'gcp-types/compute-v1:firewalls',
+          'properties': rule,
+      }
+      resources.append(resource)
+
+      # If a dependsOn property was passed in, the firewall should depends on
+      # that.
+      if 'dependsOn' in context.properties:
+        resource['metadata'] = {
+          'dependsOn': context.properties['dependsOn']
         }
 
-    outputs = [{'name': 'rules', 'value': out}]
+    outputs = [{
+        'name': 'resourceNames',
+        'value': [resource['name'] for resource in resources]
+    }]
 
     return {'resources': resources, 'outputs': outputs}
