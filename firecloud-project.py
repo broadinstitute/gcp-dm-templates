@@ -179,32 +179,32 @@ def create_iam_policies(context):
   if 'fcRawlsServiceAccount' in context.properties:
     # Rawls requires project editor permission to handle transactional IAM
     # updates to the project.
-    fc_project_editors.append(
-        'serviceAccount:{}'.format(context.properties['fcRawlsServiceAccount']))
+    fc_project_editors.append('serviceAccount:{}'.format(
+        context.properties['fcRawlsServiceAccount']))
 
   if 'fcCromwellServiceAccount' in context.properties:
     # Cromwell requires project editor permission because... I have no idea!
-    fc_project_editors.append(
-        'serviceAccount:{}'.format(context.properties['fcRawlsServiceAccount']))
+    fc_project_editors.append('serviceAccount:{}'.format(
+        context.properties['fcRawlsServiceAccount']))
 
   if 'fcBillingUser' in context.properties:
-    fc_project_owners.append(
-        'user:{}'.format(context.properties['fcBillingUser']))
+    fc_project_owners.append('user:{}'.format(
+        context.properties['fcBillingUser']))
 
   if 'fcProjectOwnersGroup' in context.properties:
-    fc_project_owners.append(
-        'group:{}'.format(context.properties['fcProjectOwnersGroup']))
+    fc_project_owners.append('group:{}'.format(
+        context.properties['fcProjectOwnersGroup']))
 
   if fc_project_editors:
     policies.append({
-      'role': 'roles/editor',
-      'members': fc_project_editors,
+        'role': 'roles/editor',
+        'members': fc_project_editors,
     })
 
   if fc_project_owners:
     policies.append({
-      'role': 'roles/owner',
-      'members': fc_project_owners,
+        'role': 'roles/owner',
+        'members': fc_project_owners,
     })
 
   # Now we handle granting IAM permissions that apply to Firecloud-managed
@@ -277,7 +277,7 @@ def create_pubsub_notification(context, depends_on, status_string):
       context: the DM context object.
       depends_on: a list of resource names this notification should depend on.
       status_string: the "status" attribute value to publish, e.g. 'STARTED' or
-          'COMPLETED'.
+        'COMPLETED'.
 
   Returns:
     A list of pubsub Deployment Manager actions.
