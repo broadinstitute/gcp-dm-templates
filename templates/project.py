@@ -1,92 +1,35 @@
-# Copyright 2018 Google Inc. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-"""This template creates a single project with the specified service accounts and APIs enabled."""
+"""Creates a single GCP project with various configurable options.
+
+This is a somewhat generic template for FireCloud project creation. It is a
+child template meant to be called by firecloud-project.py.
+"""
 import copy
 
 
-def GenerateConfig(context):
-  """ Entry point for the deployment resources. """
-
-  project_id = context.properties.get('projectId')
-  project_name = context.properties.get('name', project_id)
-
-  # Ensure that the parent ID is a string.
-  context.properties['parent']['id'] = str(context.properties['parent']['id'])
-
-  resources = [
-      {
-          'name': 'project',
-          'type': 'cloudresourcemanager.v1.project',
-          'properties': {
-              'name': project_name,
-              'projectId': project_id,
-              'parent': context.properties['parent']
-          }
-      },
-      {
-          'name': 'billing',
-          'type': 'deploymentmanager.v2.virtual.projectBillingInfo',
-          'properties': {
-              'name':
-                  'projects/$(ref.project.projectId)',
-              'billingAccountName': (
-                  'billingAccounts/' + context.properties['billingAccountId'])
-          }
-      }
-  ]
-
-  resources.extend(create_iam_policies(context))
-
-  api_resources = activate_apis(context)
-  api_resource_names = [resource['name'] for resource in api_resources]
-  resources.extend(api_resources)
-  resources.extend(create_bucket(context, api_resource_names))
-
-  if context.properties.get('removeDefaultVPC', True):
-    resources.extend(delete_default_network(api_resource_names))
-
-  if context.properties.get('removeDefaultSA', True):
-    resources.extend(delete_default_service_account(api_resource_names))
-
-  return {
-      'resources':
-          resources,
-      'outputs': [
-          {
-              'name': 'projectId',
-              'value': '$(ref.project.projectId)'
-          },
-          {
-              'name': 'usageExportBucketName',
-              'value': '$(ref.project.projectId)-usage-export'
-          },
-          {
-              'name': 'resourceNames',
-              'value': [resource['name'] for resource in resources]
-          },
-      ]
-  }
-
-
 def bucketed_list(l, bucket_size):
-  """Breaks an input list into multiple lists with a certain bucket size."""
+  """Breaks an input list into multiple lists with a certain bucket size.
+
+  Arguments:
+    l: A list of items
+    bucket_size: The size of buckets to create.
+
+  Returns:
+    A list of lists, where each entry contains a subset of items from the input
+    list.
+  """
   n = max(1, bucket_size)
   return [l[i:i + n] for i in xrange(0, len(l), n)]
 
 
-def activate_apis(context):
-  """Generates resources for API activation. """
+def create_apis(context):
+  """Creates resources for API activation.
+
+  Args:
+      context: the DM context object.
+
+  Returns:
+    A list of DM resources to active the configured APIs.
+  """
   apis = context.properties.get('activateApis', [])
 
   # Enable the storage-component API if the usage export bucket is enabled.
@@ -162,47 +105,69 @@ def create_iam_policies(context):
   ]
 
 
-def create_bucket(context, api_names_list):
-  """ Resources for the usage export bucket. """
+def create_usage_export_bucket(context, api_names_list):
+  """Creates the usage export bucket.
+
+  This bucket will be set up to collect compute engine usage data.
+
+  We can't start creating GCS buckets until all project APIs are enabled, so we
+  take the list of API-enablement resource names as a parameter to include in
+  the dependency list of this resource.
+
+  Args:
+      context: the DM context object.
+      api_names_list: the names of all resources that enable GCP APIs.
+
+  Returns:
+    A list of DM resources, to create and set the usage export bucket.
+  """
   resources = []
-  if context.properties.get('usageExportBucket'):
-    bucket_name = '$(ref.project.projectId)-usage-export'
+  bucket_name = '$(ref.project.projectId)-usage-export'
 
-    # Create the bucket.
-    resources.append({
-        'name': 'create-usage-export-bucket',
-        'type': 'gcp-types/storage-v1:buckets',
-        'properties': {
-            'project': '$(ref.project.projectId)',
-            'name': bucket_name
-        },
-        'metadata': {
-            # Only create the bucket once all APIs have been
-            # activated.
-            'dependsOn': api_names_list
-        }
-    })
+  # Create the bucket.
+  resources.append({
+      'name': 'create-usage-export-bucket',
+      'type': 'gcp-types/storage-v1:buckets',
+      'properties': {
+          'project': '$(ref.project.projectId)',
+          'name': bucket_name
+      },
+      'metadata': {
+          # Only create the bucket once all APIs have been
+          # activated.
+          'dependsOn': api_names_list
+      }
+  })
 
-    # Set the project's usage export bucket.
-    resources.append({
-        'name': 'set-usage-export-bucket',
-        'action': (
-            'gcp-types/compute-v1:' + 'compute.projects.setUsageExportBucket'),
-        'properties': {
-            'project': '$(ref.project.projectId)',
-            'bucketName': 'gs://' + bucket_name
-        },
-        'metadata': {
-            'dependsOn': ['create-usage-export-bucket']
-        }
-    })
+  # Set the project's usage export bucket.
+  resources.append({
+      'name': 'set-usage-export-bucket',
+      'action': (
+          'gcp-types/compute-v1:' + 'compute.projects.setUsageExportBucket'),
+      'properties': {
+          'project': '$(ref.project.projectId)',
+          'bucketName': 'gs://' + bucket_name
+      },
+      'metadata': {
+          'dependsOn': ['create-usage-export-bucket']
+      }
+  })
 
   return resources
 
 
 def delete_default_network(api_names_list):
-  """ Delete the default network. """
+  """Creates DM actions to remove the default VPC network.
 
+  Args:
+      api_names_list: the names of all resources that enable GCP APIs.
+
+  Returns:
+      A list of DM actions to remove default firewall rules and the default VPC
+      network.
+  """
+  # These are GCP's statically-named firewall rules that we need to delete from
+  # the project before we delete the entire network.
   icmp_name = 'delete-default-allow-icmp'
   internal_name = 'delete-default-allow-internal'
   rdp_name = 'delete-default-allow-rdp'
@@ -255,7 +220,7 @@ def delete_default_network(api_names_list):
       },
   ]
 
-  # Ensure the firewall rules are removed before deleting the VPC.
+  # Ensure all firewall rules are removed before deleting the VPC.
   network_dependency = copy.copy(api_names_list)
   network_dependency.extend([icmp_name, internal_name, rdp_name, ssh_name])
 
@@ -275,7 +240,14 @@ def delete_default_network(api_names_list):
 
 
 def delete_default_service_account(api_names_list):
-  """ Delete the default service account. """
+  """Deletes the default service account.
+
+  Args:
+      api_names_list: the names of all resources that enable GCP APIs.
+
+  Returns:
+      A list of DM actions to remove the default project service account.
+  """
 
   resource = [{
       'name': 'delete-default-sa',
@@ -292,3 +264,76 @@ def delete_default_service_account(api_names_list):
   }]
 
   return resource
+
+
+def generate_config(context):
+  """Entry point, called by deployment manager.
+
+  Arguments:
+      context: the Deployment Manager context object.
+
+  Returns:
+      A list of resources to be consumed by the Deployment Manager.
+  """
+
+  project_id = context.properties.get('projectId')
+  project_name = context.properties.get('name', project_id)
+
+  # Ensure that the parent ID is a string.
+  context.properties['parent']['id'] = str(context.properties['parent']['id'])
+
+  resources = [
+      {
+          'name': 'project',
+          'type': 'cloudresourcemanager.v1.project',
+          'properties': {
+              'name': project_name,
+              'projectId': project_id,
+              'parent': context.properties['parent']
+          }
+      },
+      {
+          'name': 'billing',
+          'type': 'deploymentmanager.v2.virtual.projectBillingInfo',
+          'properties': {
+              'name':
+                  'projects/$(ref.project.projectId)',
+              'billingAccountName': (
+                  'billingAccounts/' + context.properties['billingAccountId'])
+          }
+      }
+  ]
+
+  resources.extend(create_iam_policies(context))
+
+  api_resources = create_apis(context)
+  resources.extend(api_resources)
+  api_resource_names = [resource['name'] for resource in api_resources]
+
+  if context.properties.get('createUsageExportBucket', True):
+    resources.extend(create_usage_export_bucket(context, api_resource_names))
+
+  if context.properties.get('removeDefaultVPC', True):
+    resources.extend(delete_default_network(api_resource_names))
+
+  if context.properties.get('removeDefaultSA', True):
+    resources.extend(delete_default_service_account(api_resource_names))
+
+  return {
+      'resources':
+          resources,
+      'outputs': [
+          {
+              'name': 'projectId',
+              'value': '$(ref.project.projectId)'
+          },
+          {
+              'name': 'usageExportBucketName',
+              'value': '$(ref.project.projectId)-usage-export'
+          },
+          {
+              'name': 'resourceNames',
+              'value': [resource['name'] for resource in resources]
+          },
+      ]
+  }

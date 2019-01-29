@@ -35,6 +35,11 @@ properties:
     description: |
       The ID of the billing account to attach to the projects.
       For example, 00E12A-0AB8B2-078CE8
+  createUsageExportBucket:
+    type: boolean
+    default: True
+    description: |
+      Defines whether a GCE usage export bucket must be created.
   iamPolicies:
     type: array
     items:
@@ -88,13 +93,6 @@ properties:
     description: |
       If True, removes the default VPC that is provisioned when a project
       is created.
-  usageExportBucket:
-    type: boolean
-    description: |
-      Defines whether a usage export bucket must be created.
-      False by default so as to not inadvertently incur
-      costs to the user. It is strongly suggested to be enabled
-      (set to True).
 
 outputs:
   properties:

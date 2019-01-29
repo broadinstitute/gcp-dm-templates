@@ -16,7 +16,9 @@ imports:
 
 required:
   - billingAccountId
+  - parentOrganization
   - projectId
+  
 
 properties:
   billingAccountId:
@@ -24,6 +26,21 @@ properties:
     description: |
       The ID of the billing account to attach to the projects.
       For example, 00E12A-0AB8B2-078CE8
+  fcBillingUser:
+    type: string
+    description: The email address of the Firecloud billing user. In production,
+      this is "billing@firecloud.org".
+  fcCromwellServiceAccount:
+    type: string
+    description: The email address of the Cromwell service account.
+  fcProjectOwnersGroup:
+    type: string
+    description: |
+      The email address of the FireCloud-wide project owners group. In production,
+      this is "project-owners@firecloud.org".
+  fcRawlsServiceAccount:
+    type: string
+    description: The email address of the Rawls service account.
   highSecurityNetwork:
     type: boolean
     description: |
@@ -59,12 +76,14 @@ properties:
     description: |
       The project name. If provided, configures the project to have a
       human-readable name that is different from the project ID.
+      Example: My Awesome Research Project
   projectOwnersGroup:
     type: string
     description: |
       The email address of the project-owners proxy group. This group is granted
       the same permissions as the viewers group, plus project.viewer and
       billing.projectManager.
+      Example: policy-asdf@firecloud.org
   projectViewersGroup:
     type: string
     description: |
@@ -72,6 +91,7 @@ properties:
       permissions required to run compute & bigquery queries within the created
       project. Specifically, bigquery.jobUser, genomics.pipelinesRunner, and
       requesterPays.
+      Example: policy-asdf@firecloud.org
   pubsubTopic:
     type: string
     description: |
@@ -81,3 +101,11 @@ properties:
       attribute {'status':'STARTED'} and the completion message will have an
       attribute {'status':'COMPLETED'}. Both messages will have an attribute
       {'projectId':PROJECT_ID} with the ID of the to-be-created project.
+      Example: projects/fc-prod-deployment-manager/topics/deployments
+  requesterPaysRole:
+    type: string
+    description: |
+      The full ID for the organization-specific Requester Pays role. This role
+      is used by Firecloud to enable requester-pays functionality for GCS and
+      BigQuery cloud resources.
+      Example: roles/12345/RequesterPays (where 12345 is an organization ID)
