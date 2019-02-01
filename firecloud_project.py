@@ -185,7 +185,7 @@ def create_iam_policies(context):
   if 'fcCromwellServiceAccount' in context.properties:
     # Cromwell requires project editor permission because... I have no idea!
     fc_project_editors.append('serviceAccount:{}'.format(
-        context.properties['fcRawlsServiceAccount']))
+        context.properties['fcCromwellServiceAccount']))
 
   if 'fcBillingUser' in context.properties:
     fc_project_owners.append('user:{}'.format(
