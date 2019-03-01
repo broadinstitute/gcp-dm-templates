@@ -40,6 +40,16 @@ properties:
     default: True
     description: |
       Defines whether a GCE usage export bucket must be created.
+  createStorageLogsBucket:
+    type: boolean
+    default: False
+    description: |
+      Defines whether a storage logs bucket must be created.
+  createCromwellAuthBucket:
+    type: boolean
+    default: False
+    description: |
+      Defines whether a cromwell auth bucket must be created.
   iamPolicies:
     type: array
     items:
@@ -102,6 +112,12 @@ outputs:
     - usageExportBucketName:
         type: string
         description: The usage export bucket name.
+    - storageLogsBucketName:
+        type: String
+        description: The storage logs bucket name.
+    - cromwellAuthBucketName:
+        type: String
+        description: The cromwell auth bucket name.
     - resourceNames:
         type: array
         description: |

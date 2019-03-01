@@ -32,8 +32,10 @@ def create_apis(context):
   """
   apis = context.properties.get('activateApis', [])
 
-  # Enable the storage-component API if the usage export bucket is enabled.
-  if (context.properties.get('usageExportBucket') and
+  # Enable the storage-component API if the usage export, storage logs, or cromwell auth buckets are enabled.
+  if ((context.properties.get('usageExportBucket') or
+       context.properties.get('storageLogsBucket') or
+       context.properties.get('cromwellAuthBucket')) and
       'storage-component.googleapis.com' not in apis):
     apis.append('storage-component.googleapis.com')
 
@@ -154,6 +156,108 @@ def create_usage_export_bucket(context, api_names_list):
   })
 
   return resources
+
+
+def create_storage_logs_bucket(context, api_names_list):
+    """Creates the storage logs bucket.
+
+    This bucket will be set up to collect compute engine usage data.
+
+    We can't start creating GCS buckets until all project APIs are enabled, so we
+    take the list of API-enablement resource names as a parameter to include in
+    the dependency list of this resource.
+
+    Args:
+        context: the DM context object.
+        api_names_list: the names of all resources that enable GCP APIs.
+
+    Returns:
+      A list of DM resources, to create and set the storage logs bucket.
+    """
+    resources = []
+    bucket_name = 'storage-logs-$(ref.project.projectId)'
+
+    # Create the bucket.
+    resources.append({
+        'name': 'create-storage-logs-bucket',
+        'type': 'gcp-types/storage-v1:buckets',
+        'properties': {
+            'project': '$(ref.project.projectId)',
+            'name': bucket_name
+        },
+        'metadata': {
+            # Only create the bucket once all APIs have been
+            # activated.
+            'dependsOn': api_names_list
+        }
+    })
+
+    # Set the project's storage logs bucket.
+    resources.append({
+        'name': 'set-storage-logs-bucket',
+        'action': (
+                'gcp-types/compute-v1:' + 'compute.projects.setStorageLogsBucket'),
+        'properties': {
+            'project': '$(ref.project.projectId)',
+            'bucketName': 'gs://' + bucket_name
+        },
+        'metadata': {
+            'dependsOn': ['create-storage-logs-bucket']
+        }
+    })
+
+    return resources
+
+
+def create_cromwell_auth_bucket(context, api_names_list):
+    """Creates the cromwell auth bucket.
+
+    This bucket will be set up to collect compute engine usage data.
+
+    We can't start creating GCS buckets until all project APIs are enabled, so we
+    take the list of API-enablement resource names as a parameter to include in
+    the dependency list of this resource.
+
+    Args:
+        context: the DM context object.
+        api_names_list: the names of all resources that enable GCP APIs.
+
+    Returns:
+      A list of DM resources, to create and set the cromwell auth bucket.
+    """
+    resources = []
+    bucket_name = 'cromwell-auth-$(ref.project.projectId)'
+
+    # Create the bucket.
+    resources.append({
+        'name': 'create-cromwell-auth-bucket',
+        'type': 'gcp-types/storage-v1:buckets',
+        'properties': {
+            'project': '$(ref.project.projectId)',
+            'name': bucket_name
+        },
+        'metadata': {
+            # Only create the bucket once all APIs have been
+            # activated.
+            'dependsOn': api_names_list
+        }
+    })
+
+    # Set the project's cromwell auth bucket.
+    resources.append({
+        'name': 'set-cromwell-auth-bucket',
+        'action': (
+                'gcp-types/compute-v1:' + 'compute.projects.setCromwellAuthBucket'),
+        'properties': {
+            'project': '$(ref.project.projectId)',
+            'bucketName': 'gs://' + bucket_name
+        },
+        'metadata': {
+            'dependsOn': ['create-cromwell-auth-bucket']
+        }
+    })
+
+    return resources
 
 
 def delete_default_network(api_names_list):
@@ -313,6 +417,12 @@ def generate_config(context):
   if context.properties.get('createUsageExportBucket', True):
     resources.extend(create_usage_export_bucket(context, api_resource_names))
 
+  if context.properties.get('createStorageLogsBucket', True):
+    resources.extend(create_storage_logs_bucket(context, api_resource_names))
+
+  if context.properties.get('createCromwellAuthBucket', True):
+    resources.extend(create_cromwell_auth_bucket(context, api_resource_names))
+
   if context.properties.get('removeDefaultVPC', True):
     resources.extend(delete_default_network(api_resource_names))
 
@@ -330,6 +440,14 @@ def generate_config(context):
           {
               'name': 'usageExportBucketName',
               'value': '$(ref.project.projectId)-usage-export'
+          },
+          {
+              'name': 'storageLogsBucketName',
+              'value': 'storage-logs-$(ref.project.projectId)'
+          },
+          {
+              'name': 'cromwellAuthBucketName',
+              'value': 'cromwell-auth-$(ref.project.projectId)'
           },
           {
               'name': 'resourceNames',

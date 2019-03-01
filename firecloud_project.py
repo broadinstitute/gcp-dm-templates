@@ -372,7 +372,10 @@ def generate_config(context):
           # network security configurations.
           'removeDefaultVPC': True if high_security_network else False,
           # Always set up a usage bucket export for FireCloud.
-          'usageExportBucket': True
+          'usageExportBucket': True,
+          # Always set up the storage logs and cromwell auth buckets for Firecloud
+          'storageLogsBucket': True,
+          'cromwellAuthBucket': True
       }
   })
 
