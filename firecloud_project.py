@@ -11,24 +11,16 @@ FIRECLOUD_NETWORK_REGIONS = {
     'us-east4': '10.132.0.0/20',
 }
 FIRECLOUD_REQUIRED_APIS = [
-    'bigquery-json.googleapis.com',
-    'clouddebugger.googleapis.com',
-    'compute.googleapis.com',
-    'container.googleapis.com',
-    'containerregistry.googleapis.com',
-    'dataflow.googleapis.com',
-    'dataproc.googleapis.com',
-    'deploymentmanager.googleapis.com',
-    'genomics.googleapis.com',
-    'logging.googleapis.com',
-    'monitoring.googleapis.com',
-    'pubsub.googleapis.com',
-    'replicapool.googleapis.com',
-    'replicapoolupdater.googleapis.com',
-    'resourceviews.googleapis.com',
-    'sql-component.googleapis.com',
-    'storage-api.googleapis.com',
-    'storage-component.googleapis.com',
+    "bigquery-json.googleapis.com",
+    "compute.googleapis.com",
+    "containerregistry.googleapis.com",
+    "dataflow.googleapis.com",
+    "dataproc.googleapis.com",
+    "genomics.googleapis.com",
+    "logging.googleapis.com",
+    "storage-api.googleapis.com",
+    "storage-component.googleapis.com",
+    "cloudkms.googleapis.com"
 ]
 
 
@@ -334,6 +326,7 @@ def generate_config(context):
 
   # Optional properties, with defaults.
   high_security_network = context.properties.get('highSecurityNetwork', False)
+  storage_bucket_lifecycle = context.properties.get('storageBucketLifecycle', 180)
   # Use a project name if given, otherwise it's safe to fallback to use the
   # project ID as the name.
   project_name = context.properties.get('projectName', project_id)
@@ -370,11 +363,12 @@ def generate_config(context):
           'removeDefaultSA': False,
           # Removes the default VPC network for projects requiring stringent
           # network security configurations.
-          'removeDefaultVPC': True if high_security_network else False,
+          'removeDefaultVPC': high_security_network,
           # Always set up a usage bucket export for FireCloud.
           'usageExportBucket': True,
           # Always set up the storage logs and cromwell auth buckets for Firecloud
           'storageLogsBucket': True,
+          'storageBucketLifecycle': storage_bucket_lifecycle,
           'cromwellAuthBucket': True
       }
   })
