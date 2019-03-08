@@ -183,7 +183,20 @@ def create_storage_logs_bucket(context, api_names_list):
         'type': 'gcp-types/storage-v1:buckets',
         'properties': {
             'project': '$(ref.project.projectId)',
-            'name': bucket_name
+            'name': bucket_name,
+            'lifecycle': {
+                'rule': [
+                    {
+                        'action': {
+                            'type': 'Delete'
+                        },
+                        'condition': {
+                            'age': context.properties.get('storageBucketLifecycle', 180)
+                        }
+
+                    }
+                ]
+            }
         },
         'metadata': {
             # Only create the bucket once all APIs have been
@@ -192,19 +205,17 @@ def create_storage_logs_bucket(context, api_names_list):
         }
     })
 
-    # Set the project's storage logs bucket.
-    resources.append({
-        'name': 'set-storage-logs-bucket',
-        'action': (
-                'gcp-types/compute-v1:' + 'compute.projects.setStorageLogsBucket'),
-        'properties': {
-            'project': '$(ref.project.projectId)',
-            'bucketName': 'gs://' + bucket_name
-        },
-        'metadata': {
-            'dependsOn': ['create-storage-logs-bucket']
-        }
-    })
+    # # Add cloud-storage-analytics@google.com as a writer so it can write logs
+    # # Do it as a separate call so bucket gets default permissions plus this one
+    # resources.append({
+    #     'name': 'add-cloud-storage-writer',
+    #     'type': 'gcp-types/storage-v1:bucketAccessControls',
+    #     'properties': {
+    #         'bucket': bucket_name,
+    #         'entity': 'group-cloud-storage-analytics@google.com',
+    #         'role': 'WRITER'
+    #     }
+    # })
 
     return resources
 
@@ -227,6 +238,64 @@ def create_cromwell_auth_bucket(context, api_names_list):
     """
     resources = []
     bucket_name = 'cromwell-auth-$(ref.project.projectId)'
+    #
+    # bucket_readers = [] # this should maybe be adjusted to be more extendable?
+    # if 'projectOwnersGroup' in context.properties:
+    #     bucket_readers.append(context.properties.get('projectOwnersGroup'))
+    #
+    # if 'projectViewersGroup' in context.properties:
+    #     bucket_readers.append(context.properties.get('projectViewersGroup'))
+    #
+    # bucket_acl = [
+    #     {
+    #         'type': 'gcp-types/storage-v1:bucketAccessControls',
+    #         'properties': {
+    #             'entity': 'project-editors-$(ref.project.projectNumber)',
+    #             'role': 'OWNER'
+    #         }
+    #     },
+    #     {
+    #         'type': 'gcp-types/storage-v1:bucketAccessControls',
+    #         'properties': {
+    #             'entity': 'project-owners-$(ref.project.projectNumber)',
+    #             'role': 'OWNER'
+    #         }
+    #     }
+    # ]
+    #
+    # default_object_acl = [
+    #     {
+    #         'type': 'gcp-types/storage-v1:objectAccessControls',
+    #         'properties': {
+    #             'entity': 'project-editors-$(ref.project.projectNumber)',
+    #             'role': 'OWNER'
+    #         }
+    #     },
+    #     {
+    #         'type': 'gcp-types/storage-v1:objectAccessControls',
+    #         'properties': {
+    #             'entity': 'project-owners-$(ref.project.projectNumber)',
+    #             'role': 'OWNER'
+    #         }
+    #     }
+    # ]
+    #
+    # for email in bucket_readers:
+    #     bucket_acl.append({
+    #         'type': 'gcp-types/storage-v1:bucketAccessControls',
+    #         'properties': {
+    #             'entity': 'group-{}'.format(email),
+    #             'role': 'READER'
+    #         }
+    #     })
+    #
+    #     default_object_acl.append({
+    #         'type': 'gcp-types/storage-v1:objectAccessControls',
+    #         'properties': {
+    #             'entity': 'group-{}'.format(email),
+    #             'role': 'READER'
+    #         }
+    #     })
 
     # Create the bucket.
     resources.append({
@@ -235,25 +304,13 @@ def create_cromwell_auth_bucket(context, api_names_list):
         'properties': {
             'project': '$(ref.project.projectId)',
             'name': bucket_name
+            # 'acl': bucket_acl,
+            # 'defaultObjectAcl': default_object_acl
         },
         'metadata': {
             # Only create the bucket once all APIs have been
             # activated.
             'dependsOn': api_names_list
-        }
-    })
-
-    # Set the project's cromwell auth bucket.
-    resources.append({
-        'name': 'set-cromwell-auth-bucket',
-        'action': (
-                'gcp-types/compute-v1:' + 'compute.projects.setCromwellAuthBucket'),
-        'properties': {
-            'project': '$(ref.project.projectId)',
-            'bucketName': 'gs://' + bucket_name
-        },
-        'metadata': {
-            'dependsOn': ['create-cromwell-auth-bucket']
         }
     })
 
@@ -417,10 +474,10 @@ def generate_config(context):
   if context.properties.get('createUsageExportBucket', True):
     resources.extend(create_usage_export_bucket(context, api_resource_names))
 
-  if context.properties.get('createStorageLogsBucket', True):
+  if context.properties.get('storageLogsBucket', True):
     resources.extend(create_storage_logs_bucket(context, api_resource_names))
 
-  if context.properties.get('createCromwellAuthBucket', True):
+  if context.properties.get('cromwellAuthBucket', True):
     resources.extend(create_cromwell_auth_bucket(context, api_resource_names))
 
   if context.properties.get('removeDefaultVPC', True):
