@@ -179,9 +179,9 @@ def create_iam_policies(context):
     fc_project_editors.append('serviceAccount:{}'.format(
         context.properties['fcCromwellServiceAccount']))
 
-  if 'fcBillingUser' in context.properties:
-    fc_project_owners.append('user:{}'.format(
-        context.properties['fcBillingUser']))
+  if 'fcBillingGroup' in context.properties:
+    fc_project_owners.append('group:{}'.format(
+        context.properties['fcBillingGroup']))
 
   if 'fcProjectOwnersGroup' in context.properties:
     fc_project_owners.append('group:{}'.format(
