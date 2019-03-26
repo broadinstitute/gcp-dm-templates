@@ -26,10 +26,10 @@ properties:
     description: |
       The ID of the billing account to attach to the projects.
       For example, 00E12A-0AB8B2-078CE8
-  fcBillingUser:
+  fcBillingGroup:
     type: string
-    description: The email address of the Firecloud billing user. In production,
-      this is "billing@firecloud.org".
+    description: The email address of the Firecloud billing group. In production,
+      this is "terra-billing@firecloud.org".
   fcCromwellServiceAccount:
     type: string
     description: The email address of the Cromwell service account.
