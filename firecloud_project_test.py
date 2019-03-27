@@ -102,7 +102,7 @@ class FirecloudProjectTest(unittest.TestCase):
     props = self.context.properties
     props['fcCromwellServiceAccount'] = 'cromwell@firecloud.org'
     props['fcRawlsServiceAccount'] = 'rawls@firecloud.org'
-    props['fcBillingUser'] = 'billing@firecloud.org'
+    props['fcBillingGroup'] = 'terra-billing@firecloud.org'
     props['fcProjectOwnersGroup'] = 'project-owners@firecloud.org'
 
     props['projectOwnersGroup'] = 'proxy-group-owners@firecloud.org'

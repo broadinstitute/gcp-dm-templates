@@ -459,8 +459,8 @@ def generate_config(context):
           'properties': {
               'name':
                   'projects/$(ref.project.projectId)',
-              'billingAccountName': (
-                  'billingAccounts/' + context.properties['billingAccountId'])
+              'billingAccountName':
+                  context.properties['billingAccountId']
           }
       }
   ]
