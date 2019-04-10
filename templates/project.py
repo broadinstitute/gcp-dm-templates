@@ -4,7 +4,7 @@ This is a somewhat generic template for FireCloud project creation. It is a
 child template meant to be called by firecloud-project.py.
 """
 import copy
-
+import re
 
 def bucketed_list(l, bucket_size):
   """Breaks an input list into multiple lists with a certain bucket size.
@@ -207,15 +207,20 @@ def create_storage_logs_bucket(context, api_names_list):
 
     # # Add cloud-storage-analytics@google.com as a writer so it can write logs
     # # Do it as a separate call so bucket gets default permissions plus this one
-    # resources.append({
-    #     'name': 'add-cloud-storage-writer',
-    #     'type': 'gcp-types/storage-v1:bucketAccessControls',
-    #     'properties': {
-    #         'bucket': bucket_name,
-    #         'entity': 'group-cloud-storage-analytics@google.com',
-    #         'role': 'WRITER'
-    #     }
-    # })
+    resources.append({
+        'name': 'add-cloud-storage-writer',
+        'type': 'gcp-types/storage-v1:bucketAccessControls',
+        'properties': {
+            'bucket': bucket_name,
+            'entity': 'group-cloud-storage-analytics@google.com',
+            'role': 'WRITER'
+        },
+        'metadata': {
+            # Only create the bucket once all APIs have been
+            # activated.
+            'dependsOn': 'create-storage-logs-bucket'
+        }
+    })
 
     return resources
 
@@ -238,64 +243,64 @@ def create_cromwell_auth_bucket(context, api_names_list):
     """
     resources = []
     bucket_name = 'cromwell-auth-$(ref.project.projectId)'
-    #
-    # bucket_readers = [] # this should maybe be adjusted to be more extendable?
-    # if 'projectOwnersGroup' in context.properties:
-    #     bucket_readers.append(context.properties.get('projectOwnersGroup'))
-    #
-    # if 'projectViewersGroup' in context.properties:
-    #     bucket_readers.append(context.properties.get('projectViewersGroup'))
-    #
-    # bucket_acl = [
-    #     {
-    #         'type': 'gcp-types/storage-v1:bucketAccessControls',
-    #         'properties': {
-    #             'entity': 'project-editors-$(ref.project.projectNumber)',
-    #             'role': 'OWNER'
-    #         }
-    #     },
-    #     {
-    #         'type': 'gcp-types/storage-v1:bucketAccessControls',
-    #         'properties': {
-    #             'entity': 'project-owners-$(ref.project.projectNumber)',
-    #             'role': 'OWNER'
-    #         }
-    #     }
-    # ]
-    #
-    # default_object_acl = [
-    #     {
-    #         'type': 'gcp-types/storage-v1:objectAccessControls',
-    #         'properties': {
-    #             'entity': 'project-editors-$(ref.project.projectNumber)',
-    #             'role': 'OWNER'
-    #         }
-    #     },
-    #     {
-    #         'type': 'gcp-types/storage-v1:objectAccessControls',
-    #         'properties': {
-    #             'entity': 'project-owners-$(ref.project.projectNumber)',
-    #             'role': 'OWNER'
-    #         }
-    #     }
-    # ]
-    #
-    # for email in bucket_readers:
-    #     bucket_acl.append({
-    #         'type': 'gcp-types/storage-v1:bucketAccessControls',
-    #         'properties': {
-    #             'entity': 'group-{}'.format(email),
-    #             'role': 'READER'
-    #         }
-    #     })
-    #
-    #     default_object_acl.append({
-    #         'type': 'gcp-types/storage-v1:objectAccessControls',
-    #         'properties': {
-    #             'entity': 'group-{}'.format(email),
-    #             'role': 'READER'
-    #         }
-    #     })
+
+    bucket_readers = [] # this should maybe be adjusted to be more extendable?
+    if 'projectOwnersGroup' in context.properties:
+        bucket_readers.append(context.properties.get('projectOwnersGroup'))
+
+    if 'projectViewersGroup' in context.properties:
+        bucket_readers.append(context.properties.get('projectViewersGroup'))
+
+    bucket_acl = [
+        {
+            'type': 'gcp-types/storage-v1:bucketAccessControls',
+            'properties': {
+                'entity': 'project-editors-$(ref.project.projectNumber)',
+                'role': 'OWNER'
+            }
+        },
+        {
+            'type': 'gcp-types/storage-v1:bucketAccessControls',
+            'properties': {
+                'entity': 'project-owners-$(ref.project.projectNumber)',
+                'role': 'OWNER'
+            }
+        }
+    ]
+
+    default_object_acl = [
+        {
+            'type': 'gcp-types/storage-v1:objectAccessControls',
+            'properties': {
+                'entity': 'project-editors-$(ref.project.projectNumber)',
+                'role': 'OWNER'
+            }
+        },
+        {
+            'type': 'gcp-types/storage-v1:objectAccessControls',
+            'properties': {
+                'entity': 'project-owners-$(ref.project.projectNumber)',
+                'role': 'OWNER'
+            }
+        }
+    ]
+
+    for email in bucket_readers:
+        bucket_acl.append({
+            'type': 'gcp-types/storage-v1:bucketAccessControls',
+            'properties': {
+                'entity': 'group-{}'.format(email),
+                'role': 'READER'
+            }
+        })
+
+        default_object_acl.append({
+            'type': 'gcp-types/storage-v1:objectAccessControls',
+            'properties': {
+                'entity': 'group-{}'.format(email),
+                'role': 'READER'
+            }
+        })
 
     # Create the bucket.
     resources.append({
@@ -303,9 +308,9 @@ def create_cromwell_auth_bucket(context, api_names_list):
         'type': 'gcp-types/storage-v1:buckets',
         'properties': {
             'project': '$(ref.project.projectId)',
-            'name': bucket_name
-            # 'acl': bucket_acl,
-            # 'defaultObjectAcl': default_object_acl
+            'name': bucket_name,
+             'acl': bucket_acl,
+             'defaultObjectAcl': default_object_acl
         },
         'metadata': {
             # Only create the bucket once all APIs have been
@@ -427,6 +432,11 @@ def delete_default_service_account(api_names_list):
   return resource
 
 
+def label_safe_string(s, prefix = "fc-"):
+  # https://cloud.google.com/compute/docs/labeling-resources#restrictions
+  s = prefix + re.sub("[^a-z0-9\\-_]", "-", s.lower())
+  return s[:63]
+
 def generate_config(context):
   """Entry point, called by deployment manager.
 
@@ -439,6 +449,11 @@ def generate_config(context):
 
   project_id = context.properties.get('projectId')
   project_name = context.properties.get('name', project_id)
+  project_labels = context.properties.get('labels', {})
+
+  project_labels.update({
+      "billingaccount": label_safe_string(context.properties.get('billing_account_friendly_name'))
+  })
 
   # Ensure that the parent ID is a string.
   context.properties['parent']['id'] = str(context.properties['parent']['id'])
@@ -450,7 +465,8 @@ def generate_config(context):
           'properties': {
               'name': project_name,
               'projectId': project_id,
-              'parent': context.properties['parent']
+              'parent': context.properties['parent'],
+              'labels': project_labels
           }
       },
       {
