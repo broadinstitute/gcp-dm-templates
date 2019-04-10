@@ -285,22 +285,22 @@ def create_cromwell_auth_bucket(context, api_names_list):
         }
     ]
 
-    for email in bucket_readers:
-        bucket_acl.append({
-            'type': 'gcp-types/storage-v1:bucketAccessControls',
-            'properties': {
-                'entity': 'group-{}'.format(email),
-                'role': 'READER'
-            }
-        })
-
-        default_object_acl.append({
-            'type': 'gcp-types/storage-v1:objectAccessControls',
-            'properties': {
-                'entity': 'group-{}'.format(email),
-                'role': 'READER'
-            }
-        })
+    # for email in bucket_readers:
+    #     bucket_acl.append({
+    #         'type': 'gcp-types/storage-v1:bucketAccessControls',
+    #         'properties': {
+    #             'entity': 'group-{}'.format(email),
+    #             'role': 'READER'
+    #         }
+    #     })
+    #
+    #     default_object_acl.append({
+    #         'type': 'gcp-types/storage-v1:objectAccessControls',
+    #         'properties': {
+    #             'entity': 'group-{}'.format(email),
+    #             'role': 'READER'
+    #         }
+    #     })
 
     # Create the bucket.
     resources.append({
