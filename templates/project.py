@@ -218,7 +218,7 @@ def create_storage_logs_bucket(context, api_names_list):
         'metadata': {
             # Only create the bucket once all APIs have been
             # activated.
-            'dependsOn': 'create-storage-logs-bucket'
+            'dependsOn': ['create-storage-logs-bucket']
         }
     })
 
@@ -285,22 +285,22 @@ def create_cromwell_auth_bucket(context, api_names_list):
         }
     ]
 
-    # for email in bucket_readers:
-    #     bucket_acl.append({
-    #         'type': 'gcp-types/storage-v1:bucketAccessControls',
-    #         'properties': {
-    #             'entity': 'group-{}'.format(email),
-    #             'role': 'READER'
-    #         }
-    #     })
-    #
-    #     default_object_acl.append({
-    #         'type': 'gcp-types/storage-v1:objectAccessControls',
-    #         'properties': {
-    #             'entity': 'group-{}'.format(email),
-    #             'role': 'READER'
-    #         }
-    #     })
+    for email in bucket_readers:
+        bucket_acl.append({
+            'type': 'gcp-types/storage-v1:bucketAccessControls',
+            'properties': {
+                'entity': 'group-{}'.format(email),
+                'role': 'READER'
+            }
+        })
+
+        default_object_acl.append({
+            'type': 'gcp-types/storage-v1:objectAccessControls',
+            'properties': {
+                'entity': 'group-{}'.format(email),
+                'role': 'READER'
+            }
+        })
 
     # Create the bucket.
     resources.append({
@@ -309,8 +309,8 @@ def create_cromwell_auth_bucket(context, api_names_list):
         'properties': {
             'project': '$(ref.project.projectId)',
             'name': bucket_name,
-             'acl': bucket_acl,
-             'defaultObjectAcl': default_object_acl
+             'acl[]': bucket_acl,
+             'defaultObjectAcl[]': default_object_acl
         },
         'metadata': {
             # Only create the bucket once all APIs have been
@@ -452,7 +452,7 @@ def generate_config(context):
   project_labels = context.properties.get('labels', {})
 
   project_labels.update({
-      "billingaccount": label_safe_string(context.properties.get('billing_account_friendly_name'))
+      "billingaccount": label_safe_string(context.properties.get('billingAccountFriendlyName'))
   })
 
   # Ensure that the parent ID is a string.

@@ -327,7 +327,7 @@ def generate_config(context):
   # Optional properties, with defaults.
   high_security_network = context.properties.get('highSecurityNetwork', False)
   storage_bucket_lifecycle = context.properties.get('storageBucketLifecycle', 180)
-  billing_account_friendly_name = context.properties.get(['billingAccountFriendlyName'], billing_account_id)
+  billing_account_friendly_name = context.properties.get('billingAccountFriendlyName', billing_account_id)
   # Use a project name if given, otherwise it's safe to fallback to use the
   # project ID as the name.
   project_name = context.properties.get('projectName', project_id)
