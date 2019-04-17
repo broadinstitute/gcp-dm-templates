@@ -5,6 +5,8 @@ Manager. See the .py.schema file for more details on how to use the composite
 type.
 """
 
+import re
+
 FIRECLOUD_NETWORK_REGIONS = {
     'us-central1': '10.128.0.0/20',
     'us-east1': '10.130.0.0/20',
@@ -299,6 +301,12 @@ def create_pubsub_notification(context, depends_on, status_string):
   }]
 
 
+def label_safe_string(s, prefix = "fc-"):
+    # https://cloud.google.com/compute/docs/labeling-resources#restrictions
+    # note that label keys (but not values) have a 64-char length maximum which is not enforced here.
+    return prefix + re.sub("[^a-z0-9\\-_]", "-", s.lower())
+
+
 def generate_config(context):
   """Entry point, called by deployment manager.
 
@@ -353,7 +361,7 @@ def generate_config(context):
           'billingAccountId': billing_account_id,
           'billingAccountFriendlyName': billing_account_friendly_name,
           'iamPolicies': create_iam_policies(context),
-          'labels': labels_obj,
+          'labels': { k : label_safe_string(v, "") for (k, v) in labels_obj.items() },
           'name': project_name,
           # The project parent. For FireCloud, this should refer to the
           # firecloud.org (or equivalent) GCP organization ID.
