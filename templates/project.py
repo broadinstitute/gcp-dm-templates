@@ -434,8 +434,9 @@ def delete_default_service_account(api_names_list):
 
 def label_safe_string(s, prefix = "fc-"):
   # https://cloud.google.com/compute/docs/labeling-resources#restrictions
-  s = prefix + re.sub("[^a-z0-9\\-_]", "-", s.lower())
-  return s[:63]
+  # note that label keys (but not values) have a 64-char length maximum which is not enforced here.
+  return prefix + re.sub("[^a-z0-9\\-_]", "-", s.lower())
+
 
 def generate_config(context):
   """Entry point, called by deployment manager.
@@ -449,11 +450,13 @@ def generate_config(context):
 
   project_id = context.properties.get('projectId')
   project_name = context.properties.get('name', project_id)
-  project_labels = context.properties.get('labels', {})
 
+  # build and sanitize labels
+  project_labels = context.properties.get('labels', {})
   project_labels.update({
       "billingaccount": label_safe_string(context.properties.get('billingAccountFriendlyName'))
   })
+  project_labels = { k : label_safe_string(v, "") for (k, v) in project_labels.items() }
 
   # Ensure that the parent ID is a string.
   context.properties['parent']['id'] = str(context.properties['parent']['id'])
