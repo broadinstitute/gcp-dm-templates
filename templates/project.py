@@ -450,13 +450,10 @@ def generate_config(context):
 
   project_id = context.properties.get('projectId')
   project_name = context.properties.get('name', project_id)
-
-  # build and sanitize labels
   project_labels = context.properties.get('labels', {})
   project_labels.update({
       "billingaccount": label_safe_string(context.properties.get('billingAccountFriendlyName'))
   })
-  project_labels = { k : label_safe_string(v, "") for (k, v) in project_labels.items() }
 
   # Ensure that the parent ID is a string.
   context.properties['parent']['id'] = str(context.properties['parent']['id'])
