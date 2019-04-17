@@ -5,7 +5,6 @@ Manager. See the .py.schema file for more details on how to use the composite
 type.
 """
 
-import re
 
 FIRECLOUD_NETWORK_REGIONS = {
     'us-central1': '10.128.0.0/20',
