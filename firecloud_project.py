@@ -24,7 +24,7 @@ FIRECLOUD_REQUIRED_APIS = [
     "cloudkms.googleapis.com"
 ]
 
-FIRECLOUD_HIGH_SEC_NETWORK_NAME = "network"
+FIRECLOUD_VPC_NETWORK_NAME = "network"
 
 def create_default_network(context):
   """Creates a default VPC network resource.
@@ -336,7 +336,7 @@ def generate_config(context):
   labels_obj = context.properties.get('labels', {})
 
   if high_security_network:
-      labels_obj.update({"high_security_network" : FIRECLOUD_HIGH_SEC_NETWORK_NAME})
+      labels_obj.update({"vpc-network-name" : FIRECLOUD_VPC_NETWORK_NAME})
 
   if 'parentFolder' in context.properties:
     parent_obj = {
