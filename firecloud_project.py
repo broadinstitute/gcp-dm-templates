@@ -24,6 +24,7 @@ FIRECLOUD_REQUIRED_APIS = [
     "cloudkms.googleapis.com"
 ]
 
+FIRECLOUD_HIGH_SEC_NETWORK_NAME = "network"
 
 def create_default_network(context):
   """Creates a default VPC network resource.
@@ -72,7 +73,7 @@ def create_high_security_network(context):
       'type': 'templates/network.py',
       'name': 'fc-network',
       'properties': {
-          'name': 'network',
+          'name': FIRECLOUD_HIGH_SEC_NETWORK_NAME,
           'projectId': '$(ref.fc-project.projectId)',
           'autoCreateSubnetworks': False,
           'subnetworks': subnetworks,
@@ -333,6 +334,9 @@ def generate_config(context):
   # project ID as the name.
   project_name = context.properties.get('projectName', project_id)
   labels_obj = context.properties.get('labels', {})
+
+  if high_security_network:
+      labels_obj.update({"high_security_network" : FIRECLOUD_HIGH_SEC_NETWORK_NAME})
 
   if 'parentFolder' in context.properties:
     parent_obj = {
