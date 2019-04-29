@@ -15,59 +15,47 @@
 
 
 def generate_config(context):
-    """ Entry point for the deployment resources. """
+  """ Entry point for the deployment resources. """
 
-    name = context.properties.get('name', context.env['name'])
-    required_properties = ['network', 'ipCidrRange', 'region']
-    optional_properties = [
-        'enableFlowLogs',
-        'privateIpGoogleAccess',
-        'secondaryIpRanges'
-    ]
+  subnetwork_resource = {
+      'name': context.properties['name'],
+      'type': 'gcp-types/compute-v1:subnetworks',
+      'properties': {
+          # Required properties.
+          'network':
+              context.properties['network'],
+          'ipCidrRange':
+              context.properties['ipCidrRange'],
+          'region':
+              context.properties['region'],
+          'project':
+              context.properties['projectId'],
 
-    # Load the mandatory properties, then the optional ones (if specified).
-    properties = {p: context.properties[p] for p in required_properties}
-    properties.update(
-        {
-            p: context.properties[p]
-            for p in optional_properties
-            if p in context.properties
-        }
-    )
+          # Optional properties, with defaults.
+          'enableFlowLogs':
+              context.properties.get('enableFlowLogs', False),
+          'privateIpGoogleAccess':
+              context.properties.get('privateIpGoogleAccess', False),
+          'secondaryIpRanges':
+              context.properties.get('secondaryIpRanges', []),
+      }
+  }
 
-    resources = [
-        {
-            'type': 'compute.v1.subnetwork',
-            'name': name,
-            'properties': properties
-        }
-    ]
+  # Pass the 'dependsOn' property to the subnetwork resource if present.
+  if 'dependsOn' in context.properties:
+    subnetwork_resource['metadata'] = {
+        'dependsOn': context.properties['dependsOn']
+    }
 
-    output = [
-        {
-            'name': 'name',
-            'value': name
-        },
-        {
-            'name': 'selfLink',
-            'value': '$(ref.{}.selfLink)'.format(name)
-        },
-        {
-            'name': 'ipCidrRange',
-            'value': '$(ref.{}.ipCidrRange)'.format(name)
-        },
-        {
-            'name': 'region',
-            'value': '$(ref.{}.region)'.format(name)
-        },
-        {
-            'name': 'network',
-            'value': '$(ref.{}.network)'.format(name)
-        },
-        {
-            'name': 'gatewayAddress',
-            'value': '$(ref.{}.gatewayAddress)'.format(name)
-        }
-    ]
+  output = [
+      {
+          'name': 'name',
+          'value': subnetwork_resource['name'],
+      },
+      {
+          'name': 'selfLink',
+          'value': '$(ref.{}.selfLink)'.format(subnetwork_resource['name']),
+      },
+  ]
 
-    return {'resources': resources, 'outputs': output}
+  return {'resources': [subnetwork_resource], 'outputs': output}

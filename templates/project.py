@@ -1,475 +1,530 @@
-# Copyright 2018 Google Inc. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-"""
-This template creates a single project with the specified service
-accounts and APIs enabled.
+"""Creates a single GCP project with various configurable options.
+
+This is a somewhat generic template for FireCloud project creation. It is a
+child template meant to be called by firecloud-project.py.
 """
 import copy
+import re
+
+def bucketed_list(l, bucket_size):
+  """Breaks an input list into multiple lists with a certain bucket size.
+
+  Arguments:
+    l: A list of items
+    bucket_size: The size of buckets to create.
+
+  Returns:
+    A list of lists, where each entry contains a subset of items from the input
+    list.
+  """
+  n = max(1, bucket_size)
+  return [l[i:i + n] for i in xrange(0, len(l), n)]
 
 
-def generate_config(context):
-    """ Entry point for the deployment resources. """
+def create_apis(context):
+  """Creates resources for API activation.
 
-    project_id = context.properties.get('projectId', context.env['name'])
-    project_name = context.properties.get('name', context.env['name'])
+  Args:
+      context: the DM context object.
 
-    # Ensure that the parent ID is a string.
-    context.properties['parent']['id'] = str(context.properties['parent']['id'])
+  Returns:
+    A list of DM resources to active the configured APIs.
+  """
+  apis = context.properties.get('activateApis', [])
 
-    resources = [
-        {
-            'name': 'project',
-            'type': 'cloudresourcemanager.v1.project',
-            'properties':
-                {
-                    'name': project_name,
-                    'projectId': project_id,
-                    'parent': context.properties['parent']
-                }
+  # Enable the storage-component API if the usage export, storage logs, or cromwell auth buckets are enabled.
+  if ((context.properties.get('usageExportBucket') or
+       context.properties.get('storageLogsBucket') or
+       context.properties.get('cromwellAuthBucket')) and
+      'storage-component.googleapis.com' not in apis):
+    apis.append('storage-component.googleapis.com')
+
+  resources = []
+
+  # Activate APIs in batches of 20 at a time using the "batchEnable" service
+  # usage API method. The magic number 20 is part of the batchEnable API
+  # contract; see
+  # https://cloud.google.com/service-usage/docs/reference/rest/v1/services/batchEnable.
+  api_buckets = bucketed_list(apis, 20)
+
+  for i in range(0, len(api_buckets)):
+    api_names = api_buckets[i]
+
+    resources.append({
+        'name': 'api-{}'.format(i),
+        'action': ('gcp-types/serviceusage-v1beta1:' +
+                   'serviceusage.services.batchEnable'),
+        'properties': {
+            'parent': 'projects/$(ref.project.projectNumber)',
+            'serviceIds': api_names,
         },
-        {
-            'name': 'billing',
-            'type': 'deploymentmanager.v2.virtual.projectBillingInfo',
-            'properties':
-                {
-                    'name':
-                        'projects/$(ref.project.projectId)',
-                    'billingAccountName':
-                        context.properties['billingAccountId']
-                }
+        'metadata': {
+            # The only thing needed to activate APIs is billing to be enabled.
+            'dependsOn': ['billing'],
         }
-    ]
+    })
 
-    api_resources, api_names_list = activate_apis(context.properties)
-    resources.extend(api_resources)
-    resources.extend(create_service_accounts(context, project_id))
-    resources.extend(create_bucket(context.properties))
-    resources.extend(create_shared_vpc(project_id, context.properties))
-
-    if context.properties.get('removeDefaultVPC', True):
-        resources.extend(delete_default_network(api_names_list))
-
-    if context.properties.get('removeDefaultSA', True):
-        resources.extend(delete_default_service_account(api_names_list))
-
-    return {
-        'resources':
-            resources,
-        'outputs':
-            [
-                {
-                    'name': 'projectId',
-                    'value': '$(ref.project.projectId)'
-                },
-                {
-                    'name': 'usageExportBucketName',
-                    'value': '$(ref.project.projectId)-usage-export'
-                },
-                {
-                    'name':
-                        'serviceAccountDisplayName',
-                    'value':
-                        '$(ref.project.projectNumber)@cloudservices.gserviceaccount.com'  # pylint: disable=line-too-long
-                },
-                {
-                    'name':
-                        'resources',
-                    'value':
-                        [resource['name'] for resource in resources]
-                }
-            ]
-    }
+  return resources
 
 
-def activate_apis(properties):
-    """ Resources for API activation. """
+def create_iam_policies(context):
+  """ Grant the shared project IAM permissions. """
+  if 'iamPolicies' not in context.properties:
+    return []
 
-    concurrent_api_activation = properties.get('concurrentApiActivation')
-    apis = properties.get('activateApis', [])
+  return [
+      {
+          # Get the IAM policy first, so as not to remove
+          # any existing bindings.
+          'name': 'get-iam-policy',
+          'action': ('gcp-types/cloudresourcemanager-v1:' +
+                     'cloudresourcemanager.projects.getIamPolicy'),
+          'properties': {
+              'resource': '$(ref.project.projectId)'
+          },
+          'metadata': {
+              'dependsOn': ['project'],
+              'runtimePolicy': ['UPDATE_ALWAYS']
+          }
+      },
+      {
+          # Set the IAM policy patching the existing policy
+          # with whatever is currently in the config.
+          'name': 'patch-iam-policy',
+          'action': ('gcp-types/cloudresourcemanager-v1:' +
+                     'cloudresourcemanager.projects.setIamPolicy'),
+          'properties': {
+              'resource': '$(ref.project.projectId)',
+              'policy': '$(ref.get-iam-policy)',
+              'gcpIamPolicyPatch': {
+                  'add': context.properties['iamPolicies']
+              }
+          },
+          'metadata': {
+              'dependsOn': ['get-iam-policy']
+          }
+      }
+  ]
 
-    # Enable the storage-component API if the usage export bucket is enabled.
-    if (
-            properties.get('usageExportBucket') and
-            'storage-component.googleapis.com' not in apis
-    ):
-        apis.append('storage-component.googleapis.com')
 
+def create_usage_export_bucket(context, api_names_list):
+  """Creates the usage export bucket.
+
+  This bucket will be set up to collect compute engine usage data.
+
+  We can't start creating GCS buckets until all project APIs are enabled, so we
+  take the list of API-enablement resource names as a parameter to include in
+  the dependency list of this resource.
+
+  Args:
+      context: the DM context object.
+      api_names_list: the names of all resources that enable GCP APIs.
+
+  Returns:
+    A list of DM resources, to create and set the usage export bucket.
+  """
+  resources = []
+  bucket_name = '$(ref.project.projectId)-usage-export'
+
+  # Create the bucket.
+  resources.append({
+      'name': 'create-usage-export-bucket',
+      'type': 'gcp-types/storage-v1:buckets',
+      'properties': {
+          'project': '$(ref.project.projectId)',
+          'name': bucket_name
+      },
+      'metadata': {
+          # Only create the bucket once all APIs have been
+          # activated.
+          'dependsOn': api_names_list
+      }
+  })
+
+  # Set the project's usage export bucket.
+  resources.append({
+      'name': 'set-usage-export-bucket',
+      'action': (
+          'gcp-types/compute-v1:' + 'compute.projects.setUsageExportBucket'),
+      'properties': {
+          'project': '$(ref.project.projectId)',
+          'bucketName': 'gs://' + bucket_name
+      },
+      'metadata': {
+          'dependsOn': ['create-usage-export-bucket']
+      }
+  })
+
+  return resources
+
+
+def create_storage_logs_bucket(context, api_names_list):
+    """Creates the storage logs bucket.
+
+    This bucket will be set up to collect compute engine usage data.
+
+    We can't start creating GCS buckets until all project APIs are enabled, so we
+    take the list of API-enablement resource names as a parameter to include in
+    the dependency list of this resource.
+
+    Args:
+        context: the DM context object.
+        api_names_list: the names of all resources that enable GCP APIs.
+
+    Returns:
+      A list of DM resources, to create and set the storage logs bucket.
+    """
     resources = []
-    api_names_list = ['billing']
-    for api in properties.get('activateApis', []):
-        depends_on = ['billing']
-        # Serialize activation of all APIs by making apis[n]
-        # depend on apis[n-1].
-        if resources and not concurrent_api_activation:
-            depends_on.append(resources[-1]['name'])
+    bucket_name = 'storage-logs-$(ref.project.projectId)'
 
-        api_name = 'api-' + api
-        api_names_list.append(api_name)
-        resources.append(
-            {
-                'name': api_name,
-                'type': 'deploymentmanager.v2.virtual.enableService',
-                'metadata': {
-                    'dependsOn': depends_on
-                },
-                'properties':
+    # Create the bucket.
+    resources.append({
+        'name': 'create-storage-logs-bucket',
+        'type': 'gcp-types/storage-v1:buckets',
+        'properties': {
+            'project': '$(ref.project.projectId)',
+            'name': bucket_name,
+            'lifecycle': {
+                'rule': [
                     {
-                        'consumerId': 'project:' + '$(ref.project.projectId)',
-                        'serviceName': api
-                    }
-            }
-        )
-
-    # Return the API resources to enable other resources to use them as
-    # dependencies, to ensure that they are created first. For example,
-    # the default VPC or service account.
-    return resources, api_names_list
-
-
-def create_project_iam(dependencies, role_member_list):
-    """ Grant the shared project IAM permissions. """
-
-    policies_to_add = role_member_list
-    resources = [
-        {
-            # Get the IAM policy first, so as not to remove
-            # any existing bindings.
-            'name': 'get-iam-policy',
-            'action': 'gcp-types/cloudresourcemanager-v1:cloudresourcemanager.projects.getIamPolicy', # pylint: disable=line-too-long
-            'properties': {
-                'resource': '$(ref.project.projectId)'
-            },
-            'metadata':
-                {
-                    'dependsOn': dependencies,
-                    'runtimePolicy': ['UPDATE_ALWAYS']
-                }
-        },
-        {
-            # Set the IAM policy patching the existing policy
-            # with whatever is currently in the config.
-            'name': 'patch-iam-policy',
-            'action': 'gcp-types/cloudresourcemanager-v1:cloudresourcemanager.projects.setIamPolicy', # pylint: disable=line-too-long
-            'properties':
-                {
-                    'resource': '$(ref.project.projectId)',
-                    'policy': '$(ref.get-iam-policy)',
-                    'gcpIamPolicyPatch':
-                        {
-                            'add': policies_to_add
-                        }
-                }
-        }
-    ]
-
-    return resources
-
-
-def create_shared_vpc_subnet_iam(context, dependencies, members_list):
-    """ Grant the shared VPC subnet IAM permissions to Service Accounts. """
-
-    resources = []
-    if (
-            context.properties.get('sharedVPCSubnets') and
-            context.properties.get('sharedVPC')
-    ):
-        # Grant the Service Accounts access to the shared VPC subnets.
-        # Note that, until there is a subnetwork IAM patch support,
-        # setIamPolicy will overwrite any existing policies on the subnet.
-        for i, subnet in enumerate(
-                context.properties.get('sharedVPCSubnets'), 1
-            ):
-            resources.append(
-                {
-                    'name': 'add-vpc-subnet-iam-policy-{}'.format(i),
-                    'type': 'gcp-types/compute-beta:compute.subnetworks.setIamPolicy',  # pylint: disable=line-too-long
-                    'metadata':
-                        {
-                            'dependsOn': dependencies,
+                        'action': {
+                            'type': 'Delete'
                         },
-                    'properties':
-                        {
-                            'name': subnet['subnetId'],
-                            'project': context.properties['sharedVPC'],
-                            'region': subnet['region'],
-                            'bindings': [
-                                {
-                                    'role': 'roles/compute.networkUser',
-                                    'members': members_list
-                                }
-                            ]
+                        'condition': {
+                            'age': context.properties.get('storageBucketLifecycle', 180)
                         }
-                }
-            )
+
+                    }
+                ]
+            }
+        },
+        'metadata': {
+            # Only create the bucket once all APIs have been
+            # activated.
+            'dependsOn': api_names_list
+        }
+    })
+
+    # # Add cloud-storage-analytics@google.com as a writer so it can write logs
+    # # Do it as a separate call so bucket gets default permissions plus this one
+    resources.append({
+        'name': 'add-cloud-storage-writer',
+        'type': 'gcp-types/storage-v1:bucketAccessControls',
+        'properties': {
+            'bucket': bucket_name,
+            'entity': 'group:cloud-storage-analytics@google.com',
+            'role': 'WRITER'
+        },
+        'metadata': {
+            # Only create the bucket once all APIs have been
+            # activated.
+            'dependsOn': ['create-storage-logs-bucket']
+        }
+    })
 
     return resources
 
 
-def create_service_accounts(context, project_id):
-    """ Create Service Accounts and grant project IAM permissions. """
+def create_cromwell_auth_bucket(context, api_names_list):
+    """Creates the cromwell auth bucket.
 
+    This bucket will be set up to collect compute engine usage data.
+
+    We can't start creating GCS buckets until all project APIs are enabled, so we
+    take the list of API-enablement resource names as a parameter to include in
+    the dependency list of this resource.
+
+    Args:
+        context: the DM context object.
+        api_names_list: the names of all resources that enable GCP APIs.
+
+    Returns:
+      A list of DM resources, to create and set the cromwell auth bucket.
+    """
     resources = []
-    network_list = ['serviceAccount:$(ref.project.projectNumber)@cloudservices.gserviceaccount.com'] # pylint: disable=line-too-long
-    service_account_dep = []
-    policies_to_add = []
+    bucket_name = 'cromwell-auth-$(ref.project.projectId)'
 
-    for service_account in context.properties['serviceAccounts']:
-        account_id = service_account['accountId']
-        display_name = service_account.get('displayName', account_id)
-        sa_name = 'serviceAccount:{}@{}.iam.gserviceaccount.com'.format(
-            account_id,
-            project_id
-        )
+    bucket_readers = [] # this should maybe be adjusted to be more extendable?
+    if 'projectOwnersGroup' in context.properties:
+        bucket_readers.append(context.properties.get('projectOwnersGroup'))
 
-        # Check if the member needs shared VPC permissions. Put in
-        # a list to grant the shared VPC subnet IAM permissions.
-        if service_account.get('networkAccess'):
-            network_list.append(sa_name)
+    if 'projectViewersGroup' in context.properties:
+        bucket_readers.append(context.properties.get('projectViewersGroup'))
 
-        # Build the service account bindings for the project IAM permissions.
-        for role in service_account['roles']:
-            policies_to_add.append({'role': role, 'members': [sa_name]})
-
-        # Build a list of SA resources to be used as a dependency
-        # for permission granting.
-        name = 'service-account-' + account_id
-        service_account_dep.append(name)
-
-        # Create the service account resource.
-        resources.append(
-            {
-                'name': name,
-                'type': 'iam.v1.serviceAccount',
-                'properties':
-                    {
-                        'accountId': account_id,
-                        'displayName': display_name,
-                        'projectId': '$(ref.project.projectId)'
-                    }
+    bucket_acl = [
+        {
+            'type': 'gcp-types/storage-v1:bucketAccessControls',
+            'properties': {
+                'entity': 'project-editors-$(ref.project.projectNumber)',
+                'role': 'OWNER'
             }
-        )
-
-    # Build the group bindings for the project IAM permissions.
-    for group in context.properties['groups']:
-        group_name = 'group:{}'.format(group['name'])
-        for role in group['roles']:
-            policies_to_add.append({'role': role, 'members': [group_name]})
-
-    # Create the project IAM permissions.
-    if policies_to_add:
-        iam = create_project_iam(service_account_dep, policies_to_add)
-        resources.extend(iam)
-
-    if not context.properties.get('sharedVPCHost'):
-        # Create the shared VPC subnet IAM permissions.
-        resources.extend(
-            create_shared_vpc_subnet_iam(
-                context,
-                service_account_dep,
-                network_list
-            )
-        )
-
-    return resources
-
-
-def create_bucket(properties):
-    """ Resources for the usage export bucket. """
-
-    resources = []
-    if properties.get('usageExportBucket'):
-        bucket_name = '$(ref.project.projectId)-usage-export'
-
-        # Create the bucket.
-        resources.append(
-            {
-                'name': 'create-usage-export-bucket',
-                'type': 'gcp-types/storage-v1:buckets',
-                'properties':
-                    {
-                        'project': '$(ref.project.projectId)',
-                        'name': bucket_name
-                    },
-                'metadata':
-                    {
-                        'dependsOn': ['api-storage-component.googleapis.com']
-                    }
+        },
+        {
+            'type': 'gcp-types/storage-v1:bucketAccessControls',
+            'properties': {
+                'entity': 'project-owners-$(ref.project.projectNumber)',
+                'role': 'OWNER'
             }
-        )
+        }
+    ]
 
-        # Set the project's usage export bucket.
-        resources.append(
-            {
-                'name':
-                    'set-usage-export-bucket',
-                'action':
-                    'gcp-types/compute-v1:compute.projects.setUsageExportBucket',  # pylint: disable=line-too-long
-                'properties':
-                    {
-                        'project': '$(ref.project.projectId)',
-                        'bucketName': 'gs://' + bucket_name
-                    },
-                'metadata': {
-                    'dependsOn': ['create-usage-export-bucket']
-                }
+    default_object_acl = [
+        {
+            'type': 'gcp-types/storage-v1:objectAccessControls',
+            'properties': {
+                'entity': 'project-editors-$(ref.project.projectNumber)',
+                'role': 'OWNER'
             }
-        )
-
-    return resources
-
-
-def create_shared_vpc(project_id, properties):
-    """ Configure the project Shared VPC properties. """
-
-    resources = []
-
-    service_project = properties.get('sharedVPC')
-    if service_project:
-        resources.append(
-            {
-                'name': project_id + '-attach-xpn-service-' + service_project,
-                'type': 'compute.beta.xpnResource',
-                'metadata': {
-                    'dependsOn': ['api-compute.googleapis.com']
-                },
-                'properties':
-                    {
-                        'project': service_project,
-                        'xpnResource':
-                            {
-                                'id': '$(ref.project.projectId)',
-                                'type': 'PROJECT',
-                            }
-                    }
+        },
+        {
+            'type': 'gcp-types/storage-v1:objectAccessControls',
+            'properties': {
+                'entity': 'project-owners-$(ref.project.projectNumber)',
+                'role': 'OWNER'
             }
-        )
-    elif properties.get('sharedVPCHost'):
-        resources.append(
-            {
-                'name': project_id + '-xpn-host',
-                'type': 'compute.beta.xpnHost',
-                'metadata': {
-                    'dependsOn': ['api-compute.googleapis.com']
-                },
-                'properties': {
-                    'project': '$(ref.project.projectId)'
-                }
+        }
+    ]
+
+    for email in bucket_readers:
+        bucket_acl.append({
+            'type': 'gcp-types/storage-v1:bucketAccessControls',
+            'properties': {
+                'entity': 'group-{}'.format(email),
+                'role': 'READER'
             }
-        )
+        })
+
+        default_object_acl.append({
+            'type': 'gcp-types/storage-v1:objectAccessControls',
+            'properties': {
+                'entity': 'group-{}'.format(email),
+                'role': 'READER'
+            }
+        })
+
+    # Create the bucket.
+    resources.append({
+        'name': 'create-cromwell-auth-bucket',
+        'type': 'gcp-types/storage-v1:buckets',
+        'properties': {
+            'project': '$(ref.project.projectId)',
+            'name': bucket_name,
+             'acl[]': bucket_acl,
+             'defaultObjectAcl[]': default_object_acl
+        },
+        'metadata': {
+            # Only create the bucket once all APIs have been
+            # activated.
+            'dependsOn': api_names_list
+        }
+    })
 
     return resources
 
 
 def delete_default_network(api_names_list):
-    """ Delete the default network. """
+  """Creates DM actions to remove the default VPC network.
 
-    icmp_name = 'delete-default-allow-icmp'
-    internal_name = 'delete-default-allow-internal'
-    rdp_name = 'delete-default-allow-rdp'
-    ssh_name = 'delete-default-allow-ssh'
+  Args:
+      api_names_list: the names of all resources that enable GCP APIs.
 
-    resource = [
-        {
-            'name': icmp_name,
-            'action': 'gcp-types/compute-beta:compute.firewalls.delete',
-            'metadata': {
-                'dependsOn': api_names_list
-            },
-            'properties':
-                {
-                    'firewall': 'default-allow-icmp',
-                    'project': '$(ref.project.projectId)',
-                }
-        },
-        {
-            'name': internal_name,
-            'action': 'gcp-types/compute-beta:compute.firewalls.delete',
-            'metadata': {
-                'dependsOn': api_names_list
-            },
-            'properties':
-                {
-                    'firewall': 'default-allow-internal',
-                    'project': '$(ref.project.projectId)',
-                }
-        },
-        {
-            'name': rdp_name,
-            'action': 'gcp-types/compute-beta:compute.firewalls.delete',
-            'metadata': {
-                'dependsOn': api_names_list
-            },
-            'properties':
-                {
-                    'firewall': 'default-allow-rdp',
-                    'project': '$(ref.project.projectId)',
-                }
-        },
-        {
-            'name': ssh_name,
-            'action': 'gcp-types/compute-beta:compute.firewalls.delete',
-            'metadata': {
-                'dependsOn': api_names_list
-            },
-            'properties':
-                {
-                    'firewall': 'default-allow-ssh',
-                    'project': '$(ref.project.projectId)',
-                }
-        }
-    ]
+  Returns:
+      A list of DM actions to remove default firewall rules and the default VPC
+      network.
+  """
+  # These are GCP's statically-named firewall rules that we need to delete from
+  # the project before we delete the entire network.
+  icmp_name = 'delete-default-allow-icmp'
+  internal_name = 'delete-default-allow-internal'
+  rdp_name = 'delete-default-allow-rdp'
+  ssh_name = 'delete-default-allow-ssh'
 
-    # Ensure the firewall rules are removed before deleting the VPC.
-    network_dependency = copy.copy(api_names_list)
-    network_dependency.extend([icmp_name, internal_name, rdp_name, ssh_name])
+  resource = [
+      {
+          'name': icmp_name,
+          'action': 'gcp-types/compute-beta:compute.firewalls.delete',
+          'metadata': {
+              'dependsOn': api_names_list
+          },
+          'properties': {
+              'firewall': 'default-allow-icmp',
+              'project': '$(ref.project.projectId)',
+          }
+      },
+      {
+          'name': internal_name,
+          'action': 'gcp-types/compute-beta:compute.firewalls.delete',
+          'metadata': {
+              'dependsOn': api_names_list
+          },
+          'properties': {
+              'firewall': 'default-allow-internal',
+              'project': '$(ref.project.projectId)',
+          }
+      },
+      {
+          'name': rdp_name,
+          'action': 'gcp-types/compute-beta:compute.firewalls.delete',
+          'metadata': {
+              'dependsOn': api_names_list
+          },
+          'properties': {
+              'firewall': 'default-allow-rdp',
+              'project': '$(ref.project.projectId)',
+          }
+      },
+      {
+          'name': ssh_name,
+          'action': 'gcp-types/compute-beta:compute.firewalls.delete',
+          'metadata': {
+              'dependsOn': api_names_list
+          },
+          'properties': {
+              'firewall': 'default-allow-ssh',
+              'project': '$(ref.project.projectId)',
+          }
+      },
+  ]
 
-    resource.append(
-        {
-            'name': 'delete-default-network',
-            'action': 'gcp-types/compute-beta:compute.networks.delete',
-            'metadata': {
-                'dependsOn': network_dependency
-            },
-            'properties':
-                {
-                    'network': 'default',
-                    'project': '$(ref.project.projectId)'
-                }
-        }
-    )
+  # Ensure all firewall rules are removed before deleting the VPC.
+  network_dependency = copy.copy(api_names_list)
+  network_dependency.extend([icmp_name, internal_name, rdp_name, ssh_name])
 
-    return resource
+  resource.append({
+      'name': 'delete-default-network',
+      'action': 'gcp-types/compute-beta:compute.networks.delete',
+      'metadata': {
+          'dependsOn': network_dependency
+      },
+      'properties': {
+          'network': 'default',
+          'project': '$(ref.project.projectId)'
+      }
+  })
+
+  return resource
 
 
 def delete_default_service_account(api_names_list):
-    """ Delete the default service account. """
+  """Deletes the default service account.
 
-    resource = [
-        {
-            'name': 'delete-default-sa',
-            'action': 'gcp-types/iam-v1:iam.projects.serviceAccounts.delete',
-            'metadata':
-                {
-                    'dependsOn': api_names_list,
-                    'runtimePolicy': ['CREATE']
-                },
-            'properties':
-                {
-                    'name':
-                        'projects/$(ref.project.projectId)/serviceAccounts/$(ref.project.projectNumber)-compute@developer.gserviceaccount.com'  # pylint: disable=line-too-long
-                }
-        }
-    ]
+  Args:
+      api_names_list: the names of all resources that enable GCP APIs.
 
-    return resource
+  Returns:
+      A list of DM actions to remove the default project service account.
+  """
+
+  resource = [{
+      'name': 'delete-default-sa',
+      'action': 'gcp-types/iam-v1:iam.projects.serviceAccounts.delete',
+      'metadata': {
+          'dependsOn': api_names_list,
+          'runtimePolicy': ['CREATE']
+      },
+      'properties': {
+          'name': ('projects/$(ref.project.projectId)/serviceAccounts/' +
+                   '$(ref.project.projectNumber)-compute@' +
+                   'developer.gserviceaccount.com'),
+      }
+  }]
+
+  return resource
+
+
+def label_safe_string(s, prefix = "fc-"):
+  # https://cloud.google.com/compute/docs/labeling-resources#restrictions
+  # note that label keys (but not values) have a 64-char length maximum which is not enforced here.
+  return prefix + re.sub("[^a-z0-9\\-_]", "-", s.lower())
+
+
+def generate_config(context):
+  """Entry point, called by deployment manager.
+
+  Arguments:
+      context: the Deployment Manager context object.
+
+  Returns:
+      A list of resources to be consumed by the Deployment Manager.
+  """
+
+  project_id = context.properties.get('projectId')
+  project_name = context.properties.get('name', project_id)
+  project_labels = context.properties.get('labels', {})
+  project_labels.update({
+      "billingaccount": label_safe_string(context.properties.get('billingAccountFriendlyName'))
+  })
+
+  # Ensure that the parent ID is a string.
+  context.properties['parent']['id'] = str(context.properties['parent']['id'])
+
+  resources = [
+      {
+          'name': 'project',
+          'type': 'cloudresourcemanager.v1.project',
+          'properties': {
+              'name': project_name,
+              'projectId': project_id,
+              'parent': context.properties['parent'],
+              'labels': project_labels
+          }
+      },
+      {
+          'name': 'billing',
+          'type': 'deploymentmanager.v2.virtual.projectBillingInfo',
+          'properties': {
+              'name':
+                  'projects/$(ref.project.projectId)',
+              'billingAccountName':
+                  context.properties['billingAccountId']
+          }
+      }
+  ]
+
+  resources.extend(create_iam_policies(context))
+
+  api_resources = create_apis(context)
+  resources.extend(api_resources)
+  api_resource_names = [resource['name'] for resource in api_resources]
+
+  if context.properties.get('createUsageExportBucket', True):
+    resources.extend(create_usage_export_bucket(context, api_resource_names))
+
+  if context.properties.get('storageLogsBucket', True):
+    resources.extend(create_storage_logs_bucket(context, api_resource_names))
+
+  if context.properties.get('cromwellAuthBucket', True):
+    resources.extend(create_cromwell_auth_bucket(context, api_resource_names))
+
+  if context.properties.get('removeDefaultVPC', True):
+    resources.extend(delete_default_network(api_resource_names))
+
+  if context.properties.get('removeDefaultSA', True):
+    resources.extend(delete_default_service_account(api_resource_names))
+
+  return {
+      'resources':
+          resources,
+      'outputs': [
+          {
+              'name': 'projectId',
+              'value': '$(ref.project.projectId)'
+          },
+          {
+              'name': 'usageExportBucketName',
+              'value': '$(ref.project.projectId)-usage-export'
+          },
+          {
+              'name': 'storageLogsBucketName',
+              'value': 'storage-logs-$(ref.project.projectId)'
+          },
+          {
+              'name': 'cromwellAuthBucketName',
+              'value': 'cromwell-auth-$(ref.project.projectId)'
+          },
+          {
+              'name': 'resourceNames',
+              'value': [resource['name'] for resource in resources]
+          },
+      ]
+  }

@@ -1,0 +1,116 @@
+#
+# Schema definition for the FireCloud GCP Project template.
+#
+
+info:
+  title: FireCloud GCP Project
+  author: Broad Institute
+  description: |
+    Supports creation and provisioning of a FireCloud GCP project, including
+    IAM permissions, API activation, and networking config.
+
+imports:
+  - path: templates/firewall.py
+  - path: templates/network.py
+  - path: templates/project.py
+
+required:
+  - billingAccountId
+  - parentOrganization
+  - projectId
+  
+
+properties:
+  billingAccountId:
+    type: string
+    description: |
+      The ID of the billing account to attach to the projects.
+      For example, 00E12A-0AB8B2-078CE8
+  billingAccountFriendlyName:
+    type: string
+    description: |
+      The human-readable friendly name of the billing account. Optional.
+      For example, Broad Institute - 1234567
+  fcBillingGroup:
+    type: string
+    description: The email address of the Firecloud billing group. In production,
+      this is "terra-billing@firecloud.org".
+  fcCromwellServiceAccount:
+    type: string
+    description: The email address of the Cromwell service account.
+  fcProjectOwnersGroup:
+    type: string
+    description: |
+      The email address of the FireCloud-wide project owners group. In production,
+      this is "project-owners@firecloud.org".
+  fcRawlsServiceAccount:
+    type: string
+    description: The email address of the Rawls service account.
+  highSecurityNetwork:
+    type: boolean
+    description: |
+      When true, the GCP project will be configured with settings necessary
+      for a high-security networking environment. This includes turning on
+      VPC flow logs, removing the default VPC network, disabling
+      auto subnet creation, and setting restrictive firewall rules.
+  labels:
+    type: object
+    description: |
+      Optional key-value pairs which will be stored as resource labels on the
+      created project. Example: "project: 'all-of-us'"
+  parentOrganization:
+    type: [integer, string]
+    description: |
+      The parent organization ID. If empty, the default FireCloud
+      organization ID will be used.
+  parentFolder:
+    type: [integer, string]
+    description: |
+      The parent folder ID. If non-empty, the project will be created inside
+      the folder instead of at the organization root level.
+  projectId:
+    type: string
+    pattern: ^[a-z][a-z0-9-]{5,28}[a-z0-9]$
+    description: |
+      The unique, user-assigned ID of the Project. It must be 6 to 30 lowercase
+      letters, digits, or hyphens. It must start with a letter. Trailing
+      hyphens are prohibited. Read-only after creation.
+      Example: tokyo-rain-123
+  projectName:
+    type: string
+    description: |
+      The project name. If provided, configures the project to have a
+      human-readable name that is different from the project ID.
+      Example: My Awesome Research Project
+  projectOwnersGroup:
+    type: string
+    description: |
+      The email address of the project-owners proxy group. This group is granted
+      the same permissions as the viewers group, plus project.viewer and
+      billing.projectManager.
+      Example: policy-asdf@firecloud.org
+  projectViewersGroup:
+    type: string
+    description: |
+      The email address of the project-viewers proxy group. This group is given
+      permissions required to run compute & bigquery queries within the created
+      project. Specifically, bigquery.jobUser, genomics.pipelinesRunner, and
+      requesterPays.
+      Example: policy-asdf@firecloud.org
+  pubsubTopic:
+    type: string
+    description: |
+      The topic path to publish deployment start and completion message to.
+      The service account being used to run deployment manager actions must have
+      permissions to publish to this topic. The start message will have an
+      attribute {'status':'STARTED'} and the completion message will have an
+      attribute {'status':'COMPLETED'}. Both messages will have an attribute
+      {'projectId':PROJECT_ID} with the ID of the to-be-created project.
+      Example: projects/fc-prod-deployment-manager/topics/deployments
+  requesterPaysRole:
+    type: string
+    description: |
+      The full ID for the organization-specific Requester Pays role. This role
+      is used by Firecloud to enable requester-pays functionality for GCS and
+      BigQuery cloud resources.
+      Example: roles/12345/RequesterPays (where 12345 is an organization ID)

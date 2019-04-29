@@ -14,7 +14,6 @@
 
 info:
   title: Network
-  author: Sourced Group Inc.
   description: |
     Creates a network.
 
@@ -24,13 +23,17 @@ info:
 imports:
   - path: subnetwork.py
 
-# required:
-#  - name
+required:
+  - name
+  - projectId
 
 properties:
   name:
     type: string
     description: Name of the network resource.
+  projectId:
+    type: string
+    description: The project ID to create the network in.
   autoCreateSubnetworks:
     type: boolean
     default: false
@@ -61,39 +64,6 @@ outputs:
     - selfLink:
         type: string
         description: The URI (SelfLink) of the network resource.
-    - subnetworks:
+    - resourceNames:
       type: array
-      description: Array of subnetwork` information.
-      items:
-        description: |
-          The name of the subnetwork resource. For example, the output can be
-          referenced as: $(ref.<my-network>.subnetworks.<subnetwork-name>.selfLink)
-        patternProperties:
-          ".*":
-            type: object
-            description: Details for a subnetwork resource.
-            properties:
-              - selfLink:
-                  type: string
-                  description: The URI (SelfLink) of the subnet resource.
-              - region:
-                  type: string
-                  description: The name of the region where the subnetwork resides.
-              - network:
-                  type: string
-                  description: The URL of the network to which the subnetwork belongs.
-              - ipCidrRange:
-                  type: string
-                  description: |
-                    The range of internal addresses owned by the subnetwork.
-              - gatewayAddress:
-                  type: string
-                  description: |
-                    The gateway address for default routes to reach destination addresses
-                    outside this subnetwork.
-
-documentation:
-  - templates/network/README.md
-
-examples:
-  - templates/network/examples/network.yaml
+      description: Array of resource names created by this template.
