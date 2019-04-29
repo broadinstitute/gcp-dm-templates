@@ -212,7 +212,7 @@ def create_storage_logs_bucket(context, api_names_list):
         'type': 'gcp-types/storage-v1:bucketAccessControls',
         'properties': {
             'bucket': bucket_name,
-            'entity': 'group-cloud-storage-analytics@google.com',
+            'entity': 'group:cloud-storage-analytics@google.com',
             'role': 'WRITER'
         },
         'metadata': {
