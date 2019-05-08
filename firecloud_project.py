@@ -5,12 +5,33 @@ Manager. See the .py.schema file for more details on how to use the composite
 type.
 """
 
+GCP_ZONES = ['asia-east1',
+             'asia-east2',
+             'asia-northeast1',
+             'asia-northeast2',
+             'asia-south1',
+             'asia-southeast1',
+             'australia-southeast1',
+             'europe-north1',
+             'europe-west1',
+             'europe-west2',
+             'europe-west3',
+             'europe-west4',
+             'europe-west6',
+             'northamerica-northeast1',
+             'southamerica-east1',
+             'us-central1',
+             'us-east1',
+             'us-east4',
+             'us-west1',
+             'us-west2']
 
-FIRECLOUD_NETWORK_REGIONS = {
-    'us-central1': '10.128.0.0/20',
-    'us-east1': '10.130.0.0/20',
-    'us-east4': '10.132.0.0/20',
-}
+def iprange(number):
+    return '10.' + str(number) + '.0.0/20'
+
+#assign IP ranges programmatically, because typing them out terrifies me
+FIRECLOUD_NETWORK_REGIONS = { zone: iprange(128 + 2*i) for (i, zone) in enumerate(GCP_ZONES) }
+
 FIRECLOUD_REQUIRED_APIS = [
     "bigquery-json.googleapis.com",
     "compute.googleapis.com",
@@ -25,6 +46,7 @@ FIRECLOUD_REQUIRED_APIS = [
 ]
 
 FIRECLOUD_VPC_NETWORK_NAME = "network"
+FIRECLOUD_VPC_SUBNETWORK_NAME = "subnetwork"
 
 def create_default_network(context):
   """Creates a default VPC network resource.
@@ -63,7 +85,7 @@ def create_high_security_network(context):
   subnetworks = []
   for region in FIRECLOUD_NETWORK_REGIONS:
     subnetworks.append({
-        'name': 'fc-{}'.format(region),
+        'name': FIRECLOUD_VPC_SUBNETWORK_NAME,
         'region': region,
         'ipCidrRange': FIRECLOUD_NETWORK_REGIONS[region],
         'enableFlowLogs': True,
@@ -73,7 +95,7 @@ def create_high_security_network(context):
       'type': 'templates/network.py',
       'name': 'fc-network',
       'properties': {
-          'name': FIRECLOUD_HIGH_SEC_NETWORK_NAME,
+          'name': FIRECLOUD_VPC_NETWORK_NAME,
           'projectId': '$(ref.fc-project.projectId)',
           'autoCreateSubnetworks': False,
           'subnetworks': subnetworks,
@@ -336,7 +358,10 @@ def generate_config(context):
   labels_obj = context.properties.get('labels', {})
 
   if high_security_network:
-      labels_obj.update({"vpc-network-name" : FIRECLOUD_VPC_NETWORK_NAME})
+      labels_obj.update({
+          "vpc-network-name" : FIRECLOUD_VPC_NETWORK_NAME,
+          "vpc-subnetwork-name" : FIRECLOUD_VPC_SUBNETWORK_NAME
+      })
 
   if 'parentFolder' in context.properties:
     parent_obj = {
