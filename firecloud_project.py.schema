@@ -31,6 +31,12 @@ properties:
     description: |
       The human-readable friendly name of the billing account. Optional.
       For example, Broad Institute - 1234567
+  enableFlowLogs:
+    type: boolean
+    description: |
+      When true, all VPC subnets in the project will be configured with VPC flow
+      logging turned on, with 100% sampling rate and 30-second aggregation. Defaults
+      to false. If highSecurityNetwork is false, this property has no effect.
   fcBillingGroup:
     type: string
     description: The email address of the Firecloud billing group. In production,
@@ -50,9 +56,9 @@ properties:
     type: boolean
     description: |
       When true, the GCP project will be configured with settings necessary
-      for a high-security networking environment. This includes turning on
-      VPC flow logs, removing the default VPC network, disabling
-      auto subnet creation, and setting restrictive firewall rules.
+      for a high-security networking environment. This includes removing the
+      default VPC network, disabling auto subnet creation, and setting restrictive
+      firewall rules.
   labels:
     type: object
     description: |
