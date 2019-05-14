@@ -26,14 +26,20 @@ imports:
 required:
   - name
   - projectId
+  - resourceName
 
 properties:
   name:
     type: string
-    description: Name of the network resource.
+    description: Name of the network object.
   projectId:
     type: string
     description: The project ID to create the network in.
+  resourceName:
+    type: string
+    description: |
+      The Deployment Manager resource name. Must be unique within the
+      deployment.
   autoCreateSubnetworks:
     type: boolean
     default: false
@@ -45,7 +51,8 @@ properties:
     description: |
       An array of subnetworks, as defined in the `subnetwork.py` template.
       Example:
-        - name: test-subnetwork-1
+        - name: subnetwork
+          resourceName: subnetwork_uscentral1
           region: us-east1
           ipCidrRange: 10.116.48.0/22
           privateIpGoogleAccess: false
