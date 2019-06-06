@@ -17,17 +17,17 @@
 def generate_config(context):
   """ Entry point for the deployment resources. """
 
-  name = context.properties['name']
-  network_self_link = '$(ref.{}.selfLink)'.format(name)
+  resource_name = context.properties['resourceName']
+  network_self_link = '$(ref.{}.selfLink)'.format(resource_name)
 
   resources = []
 
   network_resource = {
-      'name': name,
+      'name': resource_name,
       'type': 'gcp-types/compute-v1:networks',
       'properties': {
           'name':
-              name,
+              context.properties['name'],
           'project':
               context.properties['projectId'],
           'autoCreateSubnetworks':
@@ -52,7 +52,7 @@ def generate_config(context):
     subnetwork['network'] = network_self_link
 
     # All subnetworks  depend on the parent network resource.
-    subnetwork['dependsOn'] = [name]
+    subnetwork['dependsOn'] = [resource_name]
 
     # Create the subnetwork within the specified project if the property is
     # non-empty.
@@ -60,7 +60,7 @@ def generate_config(context):
       subnetwork['projectId'] = context.properties['projectId']
 
     resources.append({
-        'name': subnetwork['name'],
+        'name': subnetwork['resourceName'],
         'type': 'subnetwork.py',
         'properties': subnetwork
     })
@@ -70,7 +70,7 @@ def generate_config(context):
           resources,
       'outputs': [{
           'name': 'name',
-          'value': name
+          'value': resource_name
       }, {
           'name': 'selfLink',
           'value': network_self_link

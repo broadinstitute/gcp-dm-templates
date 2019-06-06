@@ -85,6 +85,11 @@ def create_high_security_network(context):
   subnetworks = []
   for region in FIRECLOUD_NETWORK_REGIONS:
     subnetworks.append({
+        # We append the region to the subnetwork's DM resource name, since
+        # each resource name needs to be globally unique within the deployment.
+        'resourceName': FIRECLOUD_VPC_SUBNETWORK_NAME + '_' + region,
+        # We want all subnetworks to have the same object name, since this most
+        # closely mirrors how auto-mode subnets work and is what PAPI expects.
         'name': FIRECLOUD_VPC_SUBNETWORK_NAME,
         'region': region,
         'ipCidrRange': FIRECLOUD_NETWORK_REGIONS[region],
@@ -95,6 +100,7 @@ def create_high_security_network(context):
       'type': 'templates/network.py',
       'name': 'fc-network',
       'properties': {
+          'resourceName': 'network',
           'name': FIRECLOUD_VPC_NETWORK_NAME,
           'projectId': '$(ref.fc-project.projectId)',
           'autoCreateSubnetworks': False,
