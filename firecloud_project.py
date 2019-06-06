@@ -5,7 +5,7 @@ Manager. See the .py.schema file for more details on how to use the composite
 type.
 """
 
-GCP_ZONES = ['asia-east1',
+GCP_REGIONS = ['asia-east1',
              'asia-east2',
              'asia-northeast1',
              'asia-northeast2',
@@ -30,7 +30,7 @@ def iprange(number):
     return '10.' + str(number) + '.0.0/20'
 
 #assign IP ranges programmatically, because typing them out terrifies me
-FIRECLOUD_NETWORK_REGIONS = { zone: iprange(128 + 2*i) for (i, zone) in enumerate(GCP_ZONES) }
+FIRECLOUD_NETWORK_REGIONS = { region: iprange(128 + 2*i) for (i, region) in enumerate(GCP_REGIONS) }
 
 FIRECLOUD_REQUIRED_APIS = [
     "bigquery-json.googleapis.com",
