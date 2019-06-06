@@ -61,6 +61,7 @@ def create_default_network(context):
       'type': 'templates/network.py',
       'name': 'fc-network',
       'properties': {
+          'resourceName': 'network',
           'name': 'network',
           'projectId': '$(ref.fc-project.projectId)',
           'autoCreateSubnetworks': True,
