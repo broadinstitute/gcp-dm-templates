@@ -199,24 +199,15 @@ def create_iam_policies(context):
   fc_project_editors = []
   fc_project_owners = []
 
-  if 'fcRawlsServiceAccount' in context.properties:
-    # Rawls requires project editor permission to handle transactional IAM
-    # updates to the project.
-    fc_project_editors.append('serviceAccount:{}'.format(
-        context.properties['fcRawlsServiceAccount']))
-
-  if 'fcCromwellServiceAccount' in context.properties:
-    # Cromwell requires project editor permission because... I have no idea!
-    fc_project_editors.append('serviceAccount:{}'.format(
-        context.properties['fcCromwellServiceAccount']))
-
   if 'fcBillingGroup' in context.properties:
     fc_project_owners.append('group:{}'.format(
         context.properties['fcBillingGroup']))
 
-  if 'fcProjectOwnersGroup' in context.properties:
-    fc_project_owners.append('group:{}'.format(
-        context.properties['fcProjectOwnersGroup']))
+  if 'fcProjectEditors' in context.properties:
+    fc_project_editors.extend(context.properties['fcProjectEditors'])
+
+  if 'fcProjectOwners' in context.properties:
+    fc_project_owners.extend(context.properties['fcProjectOwners'])
 
   if fc_project_editors:
     policies.append({
