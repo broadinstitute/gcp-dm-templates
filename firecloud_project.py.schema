@@ -24,8 +24,8 @@ properties:
   billingAccountId:
     type: string
     description: |
-      The ID of the billing account to attach to the projects.
-      For example, 00E12A-0AB8B2-078CE8
+      The full ID of the billing account to attach to the projects.
+      For example, billingAccounts/00E12A-0AB8B2-078CE8
   billingAccountFriendlyName:
     type: string
     description: |
