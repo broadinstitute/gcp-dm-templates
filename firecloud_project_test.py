@@ -100,10 +100,9 @@ class FirecloudProjectTest(unittest.TestCase):
   def test_iam_policies(self):
     """Tests that IAM grants are correctly generated for FC owners & groups."""
     props = self.context.properties
-    props['fcCromwellServiceAccount'] = 'cromwell@firecloud.org'
-    props['fcRawlsServiceAccount'] = 'rawls@firecloud.org'
     props['fcBillingGroup'] = 'terra-billing@firecloud.org'
-    props['fcProjectOwnersGroup'] = 'project-owners@firecloud.org'
+    props['fcProjectOwners'] = ['group:project-owners@firecloud.org']
+    props['fcProjectEditors'] = ['serviceAccount:cromwell@firecloud.org', 'serviceAccount:rawls@firecloud.org']
 
     props['projectOwnersGroup'] = 'proxy-group-owners@firecloud.org'
     props['projectViewersGroup'] = 'proxy-group-viewers@firecloud.org'
@@ -117,8 +116,8 @@ class FirecloudProjectTest(unittest.TestCase):
             'role':
                 'roles/editor',
             'members': [
-                'serviceAccount:rawls@firecloud.org',
-                'serviceAccount:cromwell@firecloud.org'
+                'serviceAccount:cromwell@firecloud.org',
+                'serviceAccount:rawls@firecloud.org'
             ]
         })
 
@@ -127,7 +126,7 @@ class FirecloudProjectTest(unittest.TestCase):
             'role':
                 'roles/owner',
             'members': [
-                'user:billing@firecloud.org',
+                'group:terra-billing@firecloud.org',
                 'group:project-owners@firecloud.org'
             ]
         })
