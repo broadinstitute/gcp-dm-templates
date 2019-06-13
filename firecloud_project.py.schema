@@ -33,19 +33,23 @@ properties:
       For example, Broad Institute - 1234567
   fcBillingGroup:
     type: string
-    description: The email address of the Firecloud billing group. In production,
-      this is "terra-billing@firecloud.org".
-  fcCromwellServiceAccount:
-    type: string
-    description: The email address of the Cromwell service account.
-  fcProjectOwnersGroup:
-    type: string
     description: |
-      The email address of the FireCloud-wide project owners group. In production,
-      this is "project-owners@firecloud.org".
-  fcRawlsServiceAccount:
-    type: string
-    description: The email address of the Rawls service account.
+      The email address of the Firecloud billing group. In production,
+      this is "terra-billing@firecloud.org".
+  fcProjectOwners:
+    type: array
+    items:
+      type: string
+    description: |
+      List of entities to add as FireCloud project owners. In production,
+      this is [group:firecloud-project-owners@firecloud.org].
+  fcProjectEditors:
+    type: array
+    items:
+      type: string
+    description: |
+      List of entities to add as FireCloud project editors. In production,
+      this is ["serviceAccount:rawls-sa@", "serviceAccount:cromwell-sa@"].
   highSecurityNetwork:
     type: boolean
     description: |
