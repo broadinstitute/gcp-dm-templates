@@ -46,7 +46,7 @@ FIRECLOUD_REQUIRED_APIS = [
 ]
 
 FIRECLOUD_VPC_NETWORK_NAME = "network"
-FIRECLOUD_VPC_SUBNETWORK_NAME = "subnetwork"
+FIRECLOUD_VPC_SUBNETWORK_NAME = "network"
 
 def create_default_network(context):
   """Creates a default VPC network resource.
