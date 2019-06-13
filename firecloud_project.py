@@ -94,7 +94,7 @@ def create_high_security_network(context):
         'name': FIRECLOUD_VPC_SUBNETWORK_NAME,
         'region': region,
         'ipCidrRange': FIRECLOUD_NETWORK_REGIONS[region],
-        'enableFlowLogs': True,
+        'enableFlowLogs': context.properties.get('enableFlowLogs', False),
     })
 
   return [{
