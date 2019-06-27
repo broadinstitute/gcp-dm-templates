@@ -5,6 +5,8 @@ child template meant to be called by firecloud-project.py.
 """
 import copy
 import re
+import random
+import string
 
 def bucketed_list(l, bucket_size):
   """Breaks an input list into multiple lists with a certain bucket size.
@@ -72,11 +74,13 @@ def create_iam_policies(context):
   if 'iamPolicies' not in context.properties:
     return []
 
+  get_iam_policy_name = 'get-iam-policy-' + ''.join(random.choice(string.ascii_lowercase) for i in range(10))
+
   return [
       {
           # Get the IAM policy first, so as not to remove
           # any existing bindings.
-          'name': 'get-iam-policy',
+          'name': get_iam_policy_name,
           'action': ('gcp-types/cloudresourcemanager-v1:' +
                      'cloudresourcemanager.projects.getIamPolicy'),
           'properties': {
@@ -90,18 +94,18 @@ def create_iam_policies(context):
       {
           # Set the IAM policy patching the existing policy
           # with whatever is currently in the config.
-          'name': 'patch-iam-policy',
+          'name': 'patch-iam-policy-' + ''.join(random.choice(string.ascii_lowercase) for i in range(10)),
           'action': ('gcp-types/cloudresourcemanager-v1:' +
                      'cloudresourcemanager.projects.setIamPolicy'),
           'properties': {
               'resource': '$(ref.project.projectId)',
-              'policy': '$(ref.get-iam-policy)',
+              'policy': '$(ref.' + get_iam_policy_name + ')',
               'gcpIamPolicyPatch': {
                   'add': context.properties['iamPolicies']
               }
           },
           'metadata': {
-              'dependsOn': ['get-iam-policy']
+              'dependsOn': [get_iam_policy_name]
           }
       }
   ]
