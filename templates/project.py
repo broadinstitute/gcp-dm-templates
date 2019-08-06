@@ -129,6 +129,7 @@ def create_usage_export_bucket(context, api_names_list):
   """
   resources = []
   bucket_name = '$(ref.project.projectId)-usage-export'
+  storage_location = context.properties.get('storageLocation', 'us')
 
   # Create the bucket.
   resources.append({
@@ -136,7 +137,8 @@ def create_usage_export_bucket(context, api_names_list):
       'type': 'gcp-types/storage-v1:buckets',
       'properties': {
           'project': '$(ref.project.projectId)',
-          'name': bucket_name
+          'name': bucket_name,
+          'location': storage_location
       },
       'metadata': {
           # Only create the bucket once all APIs have been
@@ -180,6 +182,7 @@ def create_storage_logs_bucket(context, api_names_list):
     """
     resources = []
     bucket_name = 'storage-logs-$(ref.project.projectId)'
+    storage_location = context.properties.get('storageLocation', 'us')
 
     # Create the bucket.
     resources.append({
@@ -188,6 +191,7 @@ def create_storage_logs_bucket(context, api_names_list):
         'properties': {
             'project': '$(ref.project.projectId)',
             'name': bucket_name,
+            'location': storage_location,
             'lifecycle': {
                 'rule': [
                     {
@@ -247,6 +251,7 @@ def create_cromwell_auth_bucket(context, api_names_list):
     """
     resources = []
     bucket_name = 'cromwell-auth-$(ref.project.projectId)'
+    storage_location = context.properties.get('storageLocation', 'us')
 
     bucket_readers = [] # this should maybe be adjusted to be more extendable?
     if 'projectOwnersGroup' in context.properties:
@@ -313,6 +318,7 @@ def create_cromwell_auth_bucket(context, api_names_list):
         'properties': {
             'project': '$(ref.project.projectId)',
             'name': bucket_name,
+            'location': storage_location,
              'acl[]': bucket_acl,
              'defaultObjectAcl[]': default_object_acl
         },
