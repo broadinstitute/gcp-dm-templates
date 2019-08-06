@@ -349,6 +349,7 @@ def generate_config(context):
   # Optional properties, with defaults.
   high_security_network = context.properties.get('highSecurityNetwork', False)
   storage_bucket_lifecycle = context.properties.get('storageBucketLifecycle', 180)
+  storage_location = context.properties.get('storageLocation')
   billing_account_friendly_name = context.properties.get('billingAccountFriendlyName', billing_account_id)
   # Use a project name if given, otherwise it's safe to fallback to use the
   # project ID as the name.
@@ -399,6 +400,7 @@ def generate_config(context):
           # Always set up the storage logs and cromwell auth buckets for Firecloud
           'storageLogsBucket': True,
           'storageBucketLifecycle': storage_bucket_lifecycle,
+          'storageLocation': storage_location,
           'cromwellAuthBucket': True
       }
   })
