@@ -135,6 +135,7 @@ def create_usage_export_bucket(context, api_names_list):
   resources.append({
       'name': 'create-usage-export-bucket',
       'type': 'gcp-types/storage-v1:buckets',
+      'location': storage_location,
       'properties': {
           'project': '$(ref.project.projectId)',
           'name': bucket_name,
@@ -250,7 +251,7 @@ def create_cromwell_auth_bucket(context, api_names_list):
       A list of DM resources, to create and set the cromwell auth bucket.
     """
     resources = []
-    bucket_name = 'matt-cromwell-auth-$(ref.project.projectId)'
+    bucket_name = 'xyz-cromwell-auth-$(ref.project.projectId)'
     storage_location = context.properties.get('storageLocation', 'us')
 
     bucket_readers = [] # this should maybe be adjusted to be more extendable?
