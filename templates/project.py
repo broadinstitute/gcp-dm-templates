@@ -129,13 +129,12 @@ def create_usage_export_bucket(context, api_names_list):
   """
   resources = []
   bucket_name = '$(ref.project.projectId)-usage-export'
-  storage_location = context.properties.get('storageLocation', 'us')
+  storage_location = context.properties.get('storageLocation')
 
   # Create the bucket.
   resources.append({
       'name': 'create-usage-export-bucket',
       'type': 'gcp-types/storage-v1:buckets',
-      'location': storage_location,
       'properties': {
           'project': '$(ref.project.projectId)',
           'name': bucket_name,
@@ -183,7 +182,7 @@ def create_storage_logs_bucket(context, api_names_list):
     """
     resources = []
     bucket_name = 'storage-logs-$(ref.project.projectId)'
-    storage_location = context.properties.get('storageLocation', 'us')
+    storage_location = context.properties.get('storageLocation')
 
     # Create the bucket.
     resources.append({
@@ -252,7 +251,7 @@ def create_cromwell_auth_bucket(context, api_names_list):
     """
     resources = []
     bucket_name = 'xyz-cromwell-auth-$(ref.project.projectId)'
-    storage_location = context.properties.get('storageLocation', 'us')
+    storage_location = context.properties.get('storageLocation')
 
     bucket_readers = [] # this should maybe be adjusted to be more extendable?
     if 'projectOwnersGroup' in context.properties:
