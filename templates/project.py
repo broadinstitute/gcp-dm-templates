@@ -250,7 +250,7 @@ def create_cromwell_auth_bucket(context, api_names_list):
       A list of DM resources, to create and set the cromwell auth bucket.
     """
     resources = []
-    bucket_name = 'xyz-cromwell-auth-$(ref.project.projectId)'
+    bucket_name = 'cromwell-auth-$(ref.project.projectId)'
     storage_location = context.properties.get('storageLocation')
 
     bucket_readers = [] # this should maybe be adjusted to be more extendable?
