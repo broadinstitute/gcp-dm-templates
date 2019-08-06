@@ -49,6 +49,11 @@ properties:
     description: |
       List of entities to add as FireCloud project owners. In production,
       this is [group:firecloud-project-owners@firecloud.org].
+  storageLocation:
+    type: string
+    description: |
+      The location where all Google Cloud Storage resources associated with the
+      project will live.
   fcProjectEditors:
     type: array
     items:
