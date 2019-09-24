@@ -95,17 +95,16 @@ properties:
   projectOwnersGroup:
     type: string
     description: |
-      The email address of the project-owners proxy group. This group is granted
+      The email address of the project-owners group. This group is granted
       the same permissions as the viewers group, plus project.viewer and
       billing.projectManager.
       Example: policy-asdf@firecloud.org
   projectViewersGroup:
     type: string
     description: |
-      The email address of the project-viewers proxy group. This group is given
+      The email address of the project-viewers group. This group is given
       permissions required to run compute & bigquery queries within the created
-      project. Specifically, bigquery.jobUser, genomics.pipelinesRunner, and
-      requesterPays.
+      project. Specifically, bigquery.jobUser and requesterPays.
       Example: policy-asdf@firecloud.org
   pubsubTopic:
     type: string
