@@ -143,15 +143,6 @@ class FirecloudProjectTest(unittest.TestCase):
             'members': ['group:proxy-group-owners@firecloud.org']
         })
     self.assertEqual(
-        policy_with_role(policies, 'roles/genomics.pipelinesRunner'), {
-            'role':
-                'roles/genomics.pipelinesRunner',
-            'members': [
-                'group:proxy-group-owners@firecloud.org',
-                'group:proxy-group-viewers@firecloud.org'
-            ]
-        })
-    self.assertEqual(
         policy_with_role(policies, 'roles/bigquery.jobUser'), {
             'role':
                 'roles/bigquery.jobUser',

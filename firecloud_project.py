@@ -260,12 +260,6 @@ def create_iam_policies(context):
   if owners_and_viewers:
     policies.extend([
         {
-            # Owners & viewers are allowed to spin up PAPI nodes in the
-            # project (required for creating Leonardo notebooks).
-            'role': 'roles/genomics.pipelinesRunner',
-            'members': owners_and_viewers,
-        },
-        {
             # Owners & viewers are allowed to run BigQuery queries in the
             # project (required for running BQ queries within notebooks).
             'role': 'roles/bigquery.jobUser',
