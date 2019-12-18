@@ -39,10 +39,13 @@ FIRECLOUD_REQUIRED_APIS = [
     "dataflow.googleapis.com",
     "dataproc.googleapis.com",
     "genomics.googleapis.com",
-    "logging.googleapis.com",
     "storage-api.googleapis.com",
     "storage-component.googleapis.com",
-    "cloudkms.googleapis.com"
+    "cloudkms.googleapis.com",
+    "logging.googleapis.com",
+    "monitoring.googleapis.com",
+    "clouderrorreporting.googleapis.com",
+    "cloudtrace.googleapis.com"
 ]
 
 FIRECLOUD_VPC_NETWORK_NAME = "network"
