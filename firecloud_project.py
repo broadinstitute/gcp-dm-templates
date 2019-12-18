@@ -35,17 +35,17 @@ FIRECLOUD_NETWORK_REGIONS = { region: iprange(128 + 2*i) for (i, region) in enum
 FIRECLOUD_REQUIRED_APIS = [
     "bigquery-json.googleapis.com",
     "compute.googleapis.com",
+    "clouderrorreporting.googleapis.com",
+    "cloudkms.googleapis.com",
+    "cloudtrace.googleapis.com",
     "containerregistry.googleapis.com",
     "dataflow.googleapis.com",
     "dataproc.googleapis.com",
     "genomics.googleapis.com",
-    "storage-api.googleapis.com",
-    "storage-component.googleapis.com",
-    "cloudkms.googleapis.com",
     "logging.googleapis.com",
     "monitoring.googleapis.com",
-    "clouderrorreporting.googleapis.com",
-    "cloudtrace.googleapis.com"
+    "storage-api.googleapis.com",
+    "storage-component.googleapis.com"
 ]
 
 FIRECLOUD_VPC_NETWORK_NAME = "network"
