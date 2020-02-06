@@ -20,7 +20,7 @@ def bucketed_list(l, bucket_size):
     list.
   """
   n = max(1, bucket_size)
-  return [l[i:i + n] for i in xrange(0, len(l), n)]
+  return [l[i:i + n] for i in range(0, len(l), n)]
 
 
 def create_apis(context):
@@ -74,7 +74,7 @@ def create_iam_policies(context):
   if 'iamPolicies' not in context.properties:
     return []
 
-  get_iam_policy_name = 'get-iam-policy-' + ''.join(random.choice(string.ascii_lowercase) for i in range(10))
+  get_iam_policy_name = 'get-iam-policy-' + ''.join(random.choice(string.ascii_lowercase) for i in list(range(10)))
 
   return [
       {
@@ -94,7 +94,7 @@ def create_iam_policies(context):
       {
           # Set the IAM policy patching the existing policy
           # with whatever is currently in the config.
-          'name': 'patch-iam-policy-' + ''.join(random.choice(string.ascii_lowercase) for i in range(10)),
+          'name': 'patch-iam-policy-' + ''.join(random.choice(string.ascii_lowercase) for i in list(range(10))),
           'action': ('gcp-types/cloudresourcemanager-v1:' +
                      'cloudresourcemanager.projects.setIamPolicy'),
           'properties': {

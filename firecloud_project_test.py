@@ -89,7 +89,7 @@ class FirecloudProjectTest(unittest.TestCase):
     # specific set of subnetworks specified.
     network = resource_with_name(resources, 'fc-network')
     self.assertFalse(network['properties']['autoCreateSubnetworks'])
-    subregion_count = len(firecloud_project.FIRECLOUD_NETWORK_REGIONS.keys())
+    subregion_count = len(list(firecloud_project.FIRECLOUD_NETWORK_REGIONS.keys()))
     self.assertEqual(len(network['properties']['subnetworks']), subregion_count)
 
     # A custom firewall resource is created with a set of expected rules.
