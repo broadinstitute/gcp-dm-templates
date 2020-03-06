@@ -491,7 +491,7 @@ def generate_config(context):
   resources.extend(api_resources)
   api_resource_names = [resource['name'] for resource in api_resources]
 
-  if context.properties.get('createUsageExportBucket', True):
+  if context.properties.get('createUsageExportBucket', False):
     resources.extend(create_usage_export_bucket(context, api_resource_names))
 
   if context.properties.get('storageLogsBucket', True):
