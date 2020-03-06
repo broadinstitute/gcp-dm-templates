@@ -391,8 +391,7 @@ def generate_config(context):
           # Removes the default VPC network for projects requiring stringent
           # network security configurations.
           'removeDefaultVPC': high_security_network,
-          # Always set up a usage bucket export for FireCloud.
-          'usageExportBucket': True,
+          'createUsageExportBucket': False,
           # Always set up the storage logs and cromwell auth buckets for Firecloud
           'storageLogsBucket': True,
           'storageBucketLifecycle': storage_bucket_lifecycle,

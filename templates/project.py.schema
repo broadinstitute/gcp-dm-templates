@@ -42,7 +42,7 @@ properties:
       For example, Broad Institute - 1234567
   createUsageExportBucket:
     type: boolean
-    default: True
+    default: False
     description: |
       Defines whether a GCE usage export bucket must be created.
   createStorageLogsBucket:
