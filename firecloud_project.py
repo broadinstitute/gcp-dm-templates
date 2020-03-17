@@ -98,6 +98,7 @@ def create_high_security_network(context):
         'region': region,
         'ipCidrRange': FIRECLOUD_NETWORK_REGIONS[region],
         'enableFlowLogs': context.properties.get('enableFlowLogs', False),
+        'privateIpGoogleAccess': True
     })
 
   return [{
@@ -402,6 +403,7 @@ def generate_config(context):
   if high_security_network:
     resources.extend(create_high_security_network(context))
     resources.extend(create_firewall(context))
+    resources.extend(create_dns_zone(context))
   else:
     resources.extend(create_default_network(context))
 
