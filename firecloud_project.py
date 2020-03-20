@@ -115,6 +115,7 @@ def create_high_security_network(context):
           # template-call nodes, so we can't have this resource itself depend on
           # the project-wide resources.
           'dependsOn': '$(ref.fc-project.resourceNames)',
+          'createCustomStaticRoute': context.properties.get('privateIpGoogleAccess', False)
       },
   }]
 
