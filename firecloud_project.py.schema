@@ -13,6 +13,7 @@ imports:
   - path: templates/firewall.py
   - path: templates/network.py
   - path: templates/project.py
+  - path: templates/dns_zone.py
 
 required:
   - billingAccountId
@@ -37,6 +38,13 @@ properties:
       When true, all VPC subnets in the project will be configured with VPC flow
       logging turned on, with 100% sampling rate and 30-second aggregation. Defaults
       to false. If highSecurityNetwork is false, this property has no effect.
+  privateIpGoogleAccess:
+    type: boolean
+    description: |
+      When true, it configures the VPC network to only allow access to GCP APIs that
+      are protected by the project's service perimeter and routes all allowed API
+      traffic through a narrow IP range. Defaults to false. If highSecurityNetwork
+      is false, this property has no effect.
   fcBillingGroup:
     type: string
     description: |
