@@ -73,9 +73,10 @@ def generate_config(context):
           'type': 'gcp-types/compute-v1:routes',
           'properties': {
               'name': 'private-google-access-route',
-              'network': '$(ref.{resource_name}.name)'.format(resource_name=resource_name),
+              'network': network_self_link,
               'destRange': '199.36.153.4/30',
-              'nextHopGateway': 'default-internet-gateway'
+              'nextHopGateway':
+                  'projects/$(ref.{}.project)/global/gateways/default-internet-gateway'.format(resource_name)
           }
       })
 
