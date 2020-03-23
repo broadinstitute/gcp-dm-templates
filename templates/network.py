@@ -76,7 +76,7 @@ def generate_config(context):
               'network': network_self_link,
               'destRange': '199.36.153.4/30',
               'nextHopGateway':
-                  'projects/$(ref.{}.project)/global/gateways/default-internet-gateway'.format(resource_name)
+                  'projects/$(ref.{}.projectId)/global/gateways/default-internet-gateway'.format(resource_name)
           }
       })
 
