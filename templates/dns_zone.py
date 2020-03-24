@@ -11,11 +11,11 @@ def generate_config(context):
   zone_resource = {
       'name': zone_resource_name,
       # https://cloud.google.com/dns/docs/reference/v1/managedZones
-      'type': 'gcp-types/dns-v1:managedZone',
+      'type': 'gcp-types/dns-v1:managedZones',
       'properties': {
           'name': zone_resource_name, # todo: rename?
           'description': 'Routes googleapis.com to restricted.googleapis.com VIP',
-          'dnsName': 'googleapis.com',
+          'dnsName': 'googleapis.com.',
           'project': project,
           'visibility': 'public'
           # 'privateVisibilityConfig': {
