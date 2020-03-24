@@ -19,9 +19,9 @@ def generate_config(context):
           'project': project,
           'visibility': 'private',
           'privateVisibilityConfig': {
-              'kind': 'dns#managedZonePrivateVisibilityConfig',
+              # 'kind': 'dns#managedZonePrivateVisibilityConfig',
               'networks': [{
-                  'kind': 'dns#managedZonePrivateVisibilityConfigNetwork',
+                  # 'kind': 'dns#managedZonePrivateVisibilityConfigNetwork',
                   'networkUrl': network_url
               }]
           }
