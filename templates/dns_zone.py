@@ -15,7 +15,7 @@ def generate_config(context):
       'properties': {
           'name': zone_resource_name, # todo: rename?
           # 'description': 'Routes googleapis.com to restricted.googleapis.com VIP',
-          'dnsName': 'googleapis.com.',
+          # 'dnsName': 'googleapis.com.',
           'project': project,
           # 'visibility': 'public'
           # 'privateVisibilityConfig': {
@@ -38,7 +38,7 @@ def generate_config(context):
 
 
   dns_resource_record_set = {
-      'name': 'dns_resource_record_set',
+      'name': 'dns-resource-record-set',
       # https://cloud.google.com/dns/docs/reference/v1/resourceRecordSets
       'type': 'gcp-types/dns-v1:resourceRecordSets',
       'properties': {
