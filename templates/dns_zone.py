@@ -17,14 +17,14 @@ def generate_config(context):
           'description': 'Routes googleapis.com to restricted.googleapis.com VIP',
           'dnsName': 'googleapis.com',
           'project': project,
-          'visibility': 'private',
-          'privateVisibilityConfig': {
-              # 'kind': 'dns#managedZonePrivateVisibilityConfig',
-              'networks': [{
-                  # 'kind': 'dns#managedZonePrivateVisibilityConfigNetwork',
-                  'networkUrl': network_url
-              }]
-          }
+          'visibility': 'public'
+          # 'privateVisibilityConfig': {
+          #     # 'kind': 'dns#managedZonePrivateVisibilityConfig',
+          #     'networks': [{
+          #         # 'kind': 'dns#managedZonePrivateVisibilityConfigNetwork',
+          #         'networkUrl': network_url
+          #     }]
+          # }
       }
   }
 
