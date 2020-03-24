@@ -14,7 +14,7 @@ def generate_config(context):
       'type': 'gcp-types/dns-v1:managedZones',
       'properties': {
           'name': zone_resource_name, # todo: rename?
-          'description': 'Routes googleapis.com to restricted.googleapis.com VIP',
+          # 'description': 'Routes googleapis.com to restricted.googleapis.com VIP',
           'dnsName': 'googleapis.com.',
           'project': project,
           # 'visibility': 'public'
