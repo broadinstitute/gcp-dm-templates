@@ -44,6 +44,7 @@ def generate_config(context):
           'project': project,
           'name': 'resource-record-set',
           'managedZone': '$(ref.{resource_name}.name)'.format(resource_name=zone_resource_name),
+          'kind': 'dns#resourceRecordSet',
           'records': [{
                   'name': '*.googleapis.com.',
                   'type': 'CNAME',
