@@ -43,6 +43,7 @@ def generate_config(context):
       'type': 'gcp-types/dns-v1:resourceRecordSets',
       'properties': {
           'name': 'resource-record-set',
+          'project': project,
           'managedZone': '$(ref.{resource_name}.name)'.format(resource_name=zone_resource_name),
               #zone_resource['properties']['name'], #todo: not sure if this works
           #'$(ref.{resource_name}.name)'.format(resource_name=zone_resource['name']),
