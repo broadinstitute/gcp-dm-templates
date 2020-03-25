@@ -65,23 +65,24 @@ def generate_config(context):
         'properties': subnetwork
     })
 
-  #   # todo: this is the step 2 that we skipped in manual testing ; try it out
-  # if context.properties.get('createCustomStaticRoute', False):
-  #     resources.append({
-  #         'name': 'private-google-access-route',
-  #         # https://cloud.google.com/compute/docs/reference/rest/v1/routes
-  #         'action': 'gcp-types/compute-v1:compute.routes.insert',
-  #         'metadata': {
-  #             'dependsOn': [resource_name]
-  #         },
-  #         'properties': {
-  #             'name': 'private-google-access-route',
-  #             'network': network_self_link,
-  #             'destRange': '199.36.153.4/30',
-  #             'nextHopGateway':
-  #                 'projects/{}/global/gateways/default-internet-gateway'.format(context.properties['projectId'])
-  #         }
-  #     })
+    # todo: this is the step 2 that we skipped in manual testing ; try it out
+  if context.properties.get('createCustomStaticRoute', False):
+      resources.append({
+          'name': 'private-google-access-route',
+          # https://cloud.google.com/compute/docs/reference/rest/v1/routes
+          'action': 'gcp-types/compute-v1:compute.routes.insert',
+          'metadata': {
+              'dependsOn': [resource_name]
+          },
+          'properties': {
+              'name': 'private-google-access-route',
+              'network': network_self_link,
+              'project': context.properties['projectId'],
+              'destRange': '199.36.153.4/30',
+              'nextHopGateway':
+                  'projects/{}/global/gateways/default-internet-gateway'.format(context.properties['projectId'])
+          }
+      })
 
   return {
       'resources':
