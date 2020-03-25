@@ -13,7 +13,7 @@ def generate_config(context):
       # https://cloud.google.com/dns/docs/reference/v1/managedZones
       'type': 'gcp-types/dns-v1:managedZones',
       'properties': {
-          'name': 'test-dns-name',
+          # 'name': 'test-dns-name',
           'description': 'Routes googleapis.com to restricted.googleapis.com VIP',
           'dnsName': 'googleapis.com.',
           'project_id': project,
