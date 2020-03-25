@@ -17,7 +17,7 @@ def generate_config(context):
           'description': 'Routes googleapis.com to restricted.googleapis.com VIP',
           'dnsName': 'googleapis.com.',
           'project': project,
-          'network': network_url
+          'network': context.properties['networkName']
           # 'visibility': 'private',
           # 'privateVisibilityConfig': {
           #     'kind': 'dns#managedZonePrivateVisibilityConfig',
