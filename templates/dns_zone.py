@@ -15,7 +15,7 @@ def generate_config(context):
       'properties': {
           'name': 'test-dns-name',
           'description': 'Routes googleapis.com to restricted.googleapis.com VIP',
-          'dnsName': 'googleapis.com.',
+          # 'dnsName': 'googleapis.com.',
           'project': project,
           # 'visibility': 'private',
           # 'privateVisibilityConfig': {
