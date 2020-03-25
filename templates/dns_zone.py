@@ -37,11 +37,10 @@ def generate_config(context):
 
 
   dns_resource_record_set = {
-      'name': 'dns_resource_record_set',
+      'name': 'dns-resource-record-set',
       # https://cloud.google.com/dns/docs/reference/v1/resourceRecordSets
       'type': 'gcp-types/dns-v1:resourceRecordSets',
       'properties': {
-          'name': 'resource-record-set',
           'project': project,
           'managedZone': '$(ref.{resource_name}.name)'.format(resource_name=zone_resource_name),
               #zone_resource['properties']['name'], #todo: not sure if this works
