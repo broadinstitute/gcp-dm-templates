@@ -14,7 +14,7 @@ def generate_config(context):
       'type': 'gcp-types/dns-v1:managedZones',
       'properties': {
           'description': 'Routes googleapis.com to restricted.googleapis.com VIP',
-          'dnsName': 'teststestestestestegoogleapis.com.',
+          'dnsName': 'googleapis.com.',
           'project': project,
           'visibility': 'private',
           'privateVisibilityConfig': {
