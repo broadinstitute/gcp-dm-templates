@@ -4,7 +4,6 @@ def generate_config(context):
   """ Entry point for the deployment resources. """
   project = context.properties['projectId']
   zone_resource_name = context.properties['resourceName']
-  network_url = "https://www.googleapis.com/compute/v1/projects/{project}/global/networks/{network}".format(project=project,network=context.properties['networkName'])
 
   resources = []
 
@@ -21,7 +20,7 @@ def generate_config(context):
               'kind': 'dns#managedZonePrivateVisibilityConfig',
               'networks': [{
                   'kind': 'dns#managedZonePrivateVisibilityConfigNetwork',
-                  'networkUrl': network_url
+                  'networkUrl': context.properties['network']
               }]
           }
       }

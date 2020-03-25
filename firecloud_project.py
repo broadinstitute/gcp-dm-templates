@@ -140,7 +140,7 @@ def create_dns_zone(context):
         'properties': {
             'resourceName': 'dns-zone',
             'projectId': '$(ref.fc-project.projectId)',
-            'networkName': '$(ref.fc-network.name)',
+            'network': '$(ref.fc-network.selfLink)',
             'dependsOn': '$(ref.fc-network.resourceNames)'
         }
     }]
