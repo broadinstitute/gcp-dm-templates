@@ -44,6 +44,7 @@ def generate_config(context):
           ],
       },
       'properties': {
+          'project': project,
           'managedZone': '$(ref.{}.name)'.format(zone_resource_name),
           'additions': [{
               'name': '*.googleapis.com.',
@@ -63,6 +64,7 @@ def generate_config(context):
           ],
       },
       'properties': {
+          'project': project,
           'managedZone': '$(ref.{}.name)'.format(zone_resource_name),
           'additions': [{
               'name': 'restricted.googleapis.com.',
