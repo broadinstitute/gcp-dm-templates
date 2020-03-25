@@ -35,37 +35,77 @@ def generate_config(context):
   resources.append(zone_resource)
 
 
-
-  dns_resource_record_set = {
-      'name': 'dns-resource-record-set',
-      # https://cloud.google.com/dns/docs/reference/v1/resourceRecordSets
-      'type': 'gcp-types/dns-v1:resourceRecordSets',
+  resources.append({
+      'name': 'cname-record',
+      'action': 'gcp-types/dns-v1:dns.changes.create',
+      'metadata': {
+          'runtimePolicy': [
+              'CREATE',
+          ],
+      },
       'properties': {
-          'project': project,
-          'name': 'resource-record-set',
-          'managedZone': '$(ref.{resource_name}.name)'.format(resource_name=zone_resource_name),
-          # 'kind': 'dns#resourceRecordSet',
-          'records': [{
-                  'name': '*.googleapis.com.',
-                  'type': 'CNAME',
-                  'ttl': 300,
-                  'rrdatas': [
-                      'restricted.googleapis.com.'
-                  ]
-              },{
-                  'name': 'restricted.googleapis.com.',
-                  'type': 'A',
-                  'ttl': 300,
-                  'rrdatas': [
-                      '199.36.153.4',
-                      '199.36.153.5',
-                      '199.36.153.6',
-                      '199.36.153.7'
-                  ]
-              }
-          ]
+          'managedZone': '$(ref.{}.name)'.format(zone_resource_name),
+          'additions': [{
+              'name': '*.googleapis.com.',
+              'type': 'CNAME',
+              'ttl': 300,
+              'rrdatas': [ 'restricted.googleapis.com.' ]
+          }]
       }
-  }
-  resources.append(dns_resource_record_set)
+  })
+
+  resources.append({
+      'name': 'a-record',
+      'action': 'gcp-types/dns-v1:dns.changes.create',
+      'metadata': {
+          'runtimePolicy': [
+              'CREATE',
+          ],
+      },
+      'properties': {
+          'managedZone': '$(ref.{}.name)'.format(zone_resource_name),
+          'additions': [{
+              'name': 'restricted.googleapis.com.',
+              'type': 'A',
+              'ttl': 300,
+              'rrdatas': [
+                  '199.36.153.4',
+                  '199.36.153.5',
+                  '199.36.153.6',
+                  '199.36.153.7'
+              ]
+          }]
+      }
+  })
+  # dns_resource_record_set = {
+  #     'name': 'dns-resource-record-set',
+  #     # https://cloud.google.com/dns/docs/reference/v1/resourceRecordSets
+  #     'type': 'gcp-types/dns-v1:resourceRecordSets',
+  #     'properties': {
+  #         'project': project,
+  #         'name': 'resource-record-set',
+  #         'managedZone': '$(ref.{resource_name}.name)'.format(resource_name=zone_resource_name),
+  #         'records': [{
+  #                 'name': '*.googleapis.com.',
+  #                 'type': 'CNAME',
+  #                 'ttl': 300,
+  #                 'rrdatas': [
+  #                     'restricted.googleapis.com.'
+  #                 ]
+  #             },{
+  #                 'name': 'restricted.googleapis.com.',
+  #                 'type': 'A',
+  #                 'ttl': 300,
+  #                 'rrdatas': [
+  #                     '199.36.153.4',
+  #                     '199.36.153.5',
+  #                     '199.36.153.6',
+  #                     '199.36.153.7'
+  #                 ]
+  #             }
+  #         ]
+  #     }
+  # }
+  # resources.append(dns_resource_record_set)
 
   return {'resources': resources}
