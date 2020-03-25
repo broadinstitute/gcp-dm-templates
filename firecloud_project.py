@@ -6,47 +6,47 @@ type.
 """
 
 GCP_REGIONS = ['asia-east1',
-             'asia-east2',
-             'asia-northeast1',
-             'asia-northeast2',
-             'asia-south1',
-             'asia-southeast1',
-             'australia-southeast1',
-             'europe-north1',
-             'europe-west1',
-             'europe-west2',
-             'europe-west3',
-             'europe-west4',
-             'europe-west6',
-             'northamerica-northeast1',
-             'southamerica-east1',
-             'us-central1',
-             'us-east1',
-             'us-east4',
-             'us-west1',
-             'us-west2']
+               'asia-east2',
+               'asia-northeast1',
+               'asia-northeast2',
+               'asia-south1',
+               'asia-southeast1',
+               'australia-southeast1',
+               'europe-north1',
+               'europe-west1',
+               'europe-west2',
+               'europe-west3',
+               'europe-west4',
+               'europe-west6',
+               'northamerica-northeast1',
+               'southamerica-east1',
+               'us-central1',
+               'us-east1',
+               'us-east4',
+               'us-west1',
+               'us-west2']
 
 def iprange(number):
-    return '10.' + str(number) + '.0.0/20'
+  return '10.' + str(number) + '.0.0/20'
 
 #assign IP ranges programmatically, because typing them out terrifies me
 FIRECLOUD_NETWORK_REGIONS = { region: iprange(128 + 2*i) for (i, region) in enumerate(GCP_REGIONS) }
 
 FIRECLOUD_REQUIRED_APIS = [
-    "bigquery-json.googleapis.com",
-    "compute.googleapis.com",
-    "clouderrorreporting.googleapis.com",
-    "cloudkms.googleapis.com",
-    "cloudtrace.googleapis.com",
-    "containerregistry.googleapis.com",
-    "dataflow.googleapis.com",
-    "dataproc.googleapis.com",
-    "genomics.googleapis.com",
-    "logging.googleapis.com",
-    "monitoring.googleapis.com",
-    "storage-api.googleapis.com",
-    "storage-component.googleapis.com",
-    "dns.googleapis.com"
+  "bigquery-json.googleapis.com",
+  "compute.googleapis.com",
+  "clouderrorreporting.googleapis.com",
+  "cloudkms.googleapis.com",
+  "cloudtrace.googleapis.com",
+  "containerregistry.googleapis.com",
+  "dataflow.googleapis.com",
+  "dataproc.googleapis.com",
+  "genomics.googleapis.com",
+  "logging.googleapis.com",
+  "monitoring.googleapis.com",
+  "storage-api.googleapis.com",
+  "storage-component.googleapis.com",
+  "dns.googleapis.com"
 ]
 
 FIRECLOUD_VPC_NETWORK_NAME = "network"
@@ -62,19 +62,19 @@ def create_default_network(context):
       A resource instantiating the network.py sub-template.
   """
   return [{
-      'type': 'templates/network.py',
-      'name': 'fc-network',
-      'properties': {
-          'resourceName': 'network',
-          'name': 'network',
-          'projectId': '$(ref.fc-project.projectId)',
-          'autoCreateSubnetworks': True,
-          # We pass the dependsOn list into the network template as a
-          # parameter. Deployment Manager doesn't support dependsOn for
-          # template-call nodes, so we can't have this resource itself depend on
-          # the project-wide resources.
-          'dependsOn': '$(ref.fc-project.resourceNames)',
-      },
+    'type': 'templates/network.py',
+    'name': 'fc-network',
+    'properties': {
+      'resourceName': 'network',
+      'name': 'network',
+      'projectId': '$(ref.fc-project.projectId)',
+      'autoCreateSubnetworks': True,
+      # We pass the dependsOn list into the network template as a
+      # parameter. Deployment Manager doesn't support dependsOn for
+      # template-call nodes, so we can't have this resource itself depend on
+      # the project-wide resources.
+      'dependsOn': '$(ref.fc-project.resourceNames)',
+    },
   }]
 
 
@@ -90,59 +90,59 @@ def create_high_security_network(context):
   subnetworks = []
   for region in FIRECLOUD_NETWORK_REGIONS:
     subnetworks.append({
-        # We append the region to the subnetwork's DM resource name, since
-        # each resource name needs to be globally unique within the deployment.
-        'resourceName': FIRECLOUD_VPC_SUBNETWORK_NAME + '_' + region,
-        # We want all subnetworks to have the same object name, since this most
-        # closely mirrors how auto-mode subnets work and is what PAPI expects.
-        'name': FIRECLOUD_VPC_SUBNETWORK_NAME,
-        'region': region,
-        'ipCidrRange': FIRECLOUD_NETWORK_REGIONS[region],
-        'enableFlowLogs': context.properties.get('enableFlowLogs', False),
-        'privateIpGoogleAccess': context.properties.get('privateIpGoogleAccess', False)
+      # We append the region to the subnetwork's DM resource name, since
+      # each resource name needs to be globally unique within the deployment.
+      'resourceName': FIRECLOUD_VPC_SUBNETWORK_NAME + '_' + region,
+      # We want all subnetworks to have the same object name, since this most
+      # closely mirrors how auto-mode subnets work and is what PAPI expects.
+      'name': FIRECLOUD_VPC_SUBNETWORK_NAME,
+      'region': region,
+      'ipCidrRange': FIRECLOUD_NETWORK_REGIONS[region],
+      'enableFlowLogs': context.properties.get('enableFlowLogs', False),
+      'privateIpGoogleAccess': context.properties.get('privateIpGoogleAccess', False)
     })
 
   return [{
-      'type': 'templates/network.py',
-      'name': 'fc-network',
-      'properties': {
-          'resourceName': 'network',
-          'name': FIRECLOUD_VPC_NETWORK_NAME,
-          'projectId': '$(ref.fc-project.projectId)',
-          'autoCreateSubnetworks': False,
-          'subnetworks': subnetworks,
-          # We pass the dependsOn list into the network template as a
-          # parameter. Deployment Manager doesn't support dependsOn for
-          # template-call nodes, so we can't have this resource itself depend on
-          # the project-wide resources.
-          'dependsOn': '$(ref.fc-project.resourceNames)',
-          'createCustomStaticRoute': context.properties.get('privateIpGoogleAccess', False)
-      },
+    'type': 'templates/network.py',
+    'name': 'fc-network',
+    'properties': {
+      'resourceName': 'network',
+      'name': FIRECLOUD_VPC_NETWORK_NAME,
+      'projectId': '$(ref.fc-project.projectId)',
+      'autoCreateSubnetworks': False,
+      'subnetworks': subnetworks,
+      # We pass the dependsOn list into the network template as a
+      # parameter. Deployment Manager doesn't support dependsOn for
+      # template-call nodes, so we can't have this resource itself depend on
+      # the project-wide resources.
+      'dependsOn': '$(ref.fc-project.resourceNames)',
+      'createCustomStaticRoute': context.properties.get('privateIpGoogleAccess', False)
+    },
   }]
 
 def create_dns_zone(context):
-    """Creates a DNS Zone for the use of Private Google Access
+  """Creates a DNS Zone for the use of Private Google Access
 
-    The DNS Zone config depends on the VPC network having been completely
-    instantiated, so it includes a dependsOn reference to the list of resources
-    generated by the network sub-template.
+  The DNS Zone config depends on the VPC network having been completely
+  instantiated, so it includes a dependsOn reference to the list of resources
+  generated by the network sub-template.
 
-    Args:
-      context: the DM context object.
+  Args:
+    context: the DM context object.
 
-    Returns:
-      A resource instantiating the dns_zone.py sub-template.
-    """
-    return [{
-        'type': 'templates/dns_zone.py',
-        'name': 'fc-dns-zone',
-        'properties': {
-            'resourceName': 'dns-zone',
-            'projectId': '$(ref.fc-project.projectId)',
-            'network': '$(ref.fc-network.selfLink)',
-            'dependsOn': '$(ref.fc-network.resourceNames)'
-        }
-    }]
+  Returns:
+    A resource instantiating the dns_zone.py sub-template.
+  """
+  return [{
+    'type': 'templates/dns_zone.py',
+    'name': 'fc-dns-zone',
+    'properties': {
+      'resourceName': 'dns-zone',
+      'projectId': '$(ref.fc-project.projectId)',
+      'network': '$(ref.fc-network.selfLink)',
+      'dependsOn': '$(ref.fc-network.resourceNames)'
+    }
+  }]
 
 
 def create_firewall(context):
@@ -159,55 +159,55 @@ def create_firewall(context):
       A resource instantiating the firewall.py sub-template.
   """
   return [{
-      'type': 'templates/firewall.py',
-      'name': 'fc-firewall',
-      'properties': {
-          'projectId':
-              '$(ref.fc-project.projectId)',
-          'network':
-              '$(ref.fc-network.selfLink)',
-          'dependsOn':
-              '$(ref.fc-network.resourceNames)',
-          'rules': [
-              {
-                  'name': 'allow-icmp',
-                  'description': 'Allow ICMP from anywhere.',
-                  'allowed': [{
-                      'IPProtocol': 'icmp',
-                  }],
-                  'direction': 'INGRESS',
-                  'sourceRanges': ['0.0.0.0/0'],
-                  'priority': 65534,
-              },
-              {
-                  'name': 'allow-internal',
-                  'description': 'Allow internal traffic on the network.',
-                  'allowed': [{
-                      'IPProtocol': 'icmp',
-                  }, {
-                      'IPProtocol': 'tcp',
-                      'ports': ['0-65535'],
-                  }, {
-                      'IPProtocol': 'udp',
-                      'ports': ['0-65535'],
-                  }],
-                  'direction': 'INGRESS',
-                  'sourceRanges': ['10.128.0.0/9'],
-                  'priority': 65534,
-              },
-              {
-                  'name': 'leonardo-ssl',
-                  'description': 'Allow SSL traffic from Leonardo-managed VMs.',
-                  'allowed': [{
-                      'IPProtocol': 'tcp',
-                      'ports': ['443'],
-                  }],
-                  'direction': 'INGRESS',
-                  'sourceRanges': ['0.0.0.0/0'],
-                  'targetTags': ['leonardo'],
-              },
-          ],
-      },
+    'type': 'templates/firewall.py',
+    'name': 'fc-firewall',
+    'properties': {
+      'projectId':
+        '$(ref.fc-project.projectId)',
+      'network':
+        '$(ref.fc-network.selfLink)',
+      'dependsOn':
+        '$(ref.fc-network.resourceNames)',
+      'rules': [
+        {
+          'name': 'allow-icmp',
+          'description': 'Allow ICMP from anywhere.',
+          'allowed': [{
+            'IPProtocol': 'icmp',
+          }],
+          'direction': 'INGRESS',
+          'sourceRanges': ['0.0.0.0/0'],
+          'priority': 65534,
+        },
+        {
+          'name': 'allow-internal',
+          'description': 'Allow internal traffic on the network.',
+          'allowed': [{
+            'IPProtocol': 'icmp',
+          }, {
+            'IPProtocol': 'tcp',
+            'ports': ['0-65535'],
+          }, {
+            'IPProtocol': 'udp',
+            'ports': ['0-65535'],
+          }],
+          'direction': 'INGRESS',
+          'sourceRanges': ['10.128.0.0/9'],
+          'priority': 65534,
+        },
+        {
+          'name': 'leonardo-ssl',
+          'description': 'Allow SSL traffic from Leonardo-managed VMs.',
+          'allowed': [{
+            'IPProtocol': 'tcp',
+            'ports': ['443'],
+          }],
+          'direction': 'INGRESS',
+          'sourceRanges': ['0.0.0.0/0'],
+          'targetTags': ['leonardo'],
+        },
+      ],
+    },
   }]
 
 
@@ -231,7 +231,7 @@ def create_iam_policies(context):
 
   if 'fcBillingGroup' in context.properties:
     fc_project_owners.append('group:{}'.format(
-        context.properties['fcBillingGroup']))
+      context.properties['fcBillingGroup']))
 
   if 'fcProjectEditors' in context.properties:
     fc_project_editors.extend(context.properties['fcProjectEditors'])
@@ -241,14 +241,14 @@ def create_iam_policies(context):
 
   if fc_project_editors:
     policies.append({
-        'role': 'roles/editor',
-        'members': fc_project_editors,
+      'role': 'roles/editor',
+      'members': fc_project_editors,
     })
 
   if fc_project_owners:
     policies.append({
-        'role': 'roles/owner',
-        'members': fc_project_owners,
+      'role': 'roles/owner',
+      'members': fc_project_owners,
     })
 
   # Now we handle granting IAM permissions that apply to Firecloud-managed
@@ -264,45 +264,45 @@ def create_iam_policies(context):
 
   if 'projectOwnersGroup' in context.properties:
     owners_and_viewers.append('group:{}'.format(
-        context.properties['projectOwnersGroup']))
+      context.properties['projectOwnersGroup']))
     owners_only.append('group:{}'.format(
-        context.properties['projectOwnersGroup']))
+      context.properties['projectOwnersGroup']))
 
   if 'projectViewersGroup' in context.properties:
     owners_and_viewers.append('group:{}'.format(
-        context.properties['projectViewersGroup']))
+      context.properties['projectViewersGroup']))
 
   if owners_only:
     policies.extend([
-        {
-            # Only FireCloud project owners are allowed to view the GCP project.
-            'role': 'roles/viewer',
-            'members': owners_only,
-        },
-        {
-            # Owners can manage billing on the GCP project (to switch out
-            # billing accounts).
-            'role': 'roles/billing.projectManager',
-            'members': owners_only,
-        },
+      {
+        # Only FireCloud project owners are allowed to view the GCP project.
+        'role': 'roles/viewer',
+        'members': owners_only,
+      },
+      {
+        # Owners can manage billing on the GCP project (to switch out
+        # billing accounts).
+        'role': 'roles/billing.projectManager',
+        'members': owners_only,
+      },
     ])
 
   if owners_and_viewers:
     policies.extend([
-        {
-            # Owners & viewers are allowed to run BigQuery queries in the
-            # project (required for running BQ queries within notebooks).
-            'role': 'roles/bigquery.jobUser',
-            'members': owners_and_viewers,
-        },
+      {
+        # Owners & viewers are allowed to run BigQuery queries in the
+        # project (required for running BQ queries within notebooks).
+        'role': 'roles/bigquery.jobUser',
+        'members': owners_and_viewers,
+      },
     ])
 
   # The requester pays role is an organization-wide role ID that should be
   # granted to both project owners and viewers.
   if 'requesterPaysRole' in context.properties and owners_and_viewers:
     policies.append({
-        'role': context.properties['requesterPaysRole'],
-        'members': owners_and_viewers,
+      'role': context.properties['requesterPaysRole'],
+      'members': owners_and_viewers,
     })
 
   return policies
@@ -322,26 +322,26 @@ def create_pubsub_notification(context, depends_on, status_string):
   """
 
   return [{
-      'name': 'pubsub-notification-{}'.format(status_string),
-      'action': 'gcp-types/pubsub-v1:pubsub.projects.topics.publish',
-      'properties': {
-          'topic':
-              context.properties['pubsubTopic'],
-          'messages': [{
-              'attributes': {
-                  'projectId': context.properties['projectId'],
-                  'status': status_string,
-              }
-          }]
-      },
-      'metadata': {
-          # The notification should only run after *all* project-related
-          # resources have been deployed.
-          'dependsOn': depends_on,
-          # Only trigger the pubsub message when the deployment is created (not on
-          # update or delete).
-          'runtimePolicy': ['UPDATE_ALWAYS'],
-      },
+    'name': 'pubsub-notification-{}'.format(status_string),
+    'action': 'gcp-types/pubsub-v1:pubsub.projects.topics.publish',
+    'properties': {
+      'topic':
+        context.properties['pubsubTopic'],
+      'messages': [{
+        'attributes': {
+          'projectId': context.properties['projectId'],
+          'status': status_string,
+        }
+      }]
+    },
+    'metadata': {
+      # The notification should only run after *all* project-related
+      # resources have been deployed.
+      'dependsOn': depends_on,
+      # Only trigger the pubsub message when the deployment is created (not on
+      # update or delete).
+      'runtimePolicy': ['UPDATE_ALWAYS'],
+    },
   }]
 
 
@@ -359,11 +359,11 @@ def generate_config(context):
   # Create an initial 'STARTED' pubsub notification.
   if 'pubsubTopic' in context.properties:
     resources.extend(
-        create_pubsub_notification(
-            context,
-            depends_on=[],
-            status_string='STARTED',
-        ))
+      create_pubsub_notification(
+        context,
+        depends_on=[],
+        status_string='STARTED',
+      ))
 
   # Required properties.
   billing_account_id = context.properties['billingAccountId']
@@ -380,72 +380,72 @@ def generate_config(context):
   labels_obj = context.properties.get('labels', {})
 
   if high_security_network:
-      labels_obj.update({
-          "vpc-network-name" : FIRECLOUD_VPC_NETWORK_NAME,
-          "vpc-subnetwork-name" : FIRECLOUD_VPC_SUBNETWORK_NAME
-      })
+    labels_obj.update({
+      "vpc-network-name" : FIRECLOUD_VPC_NETWORK_NAME,
+      "vpc-subnetwork-name" : FIRECLOUD_VPC_SUBNETWORK_NAME
+    })
 
   if 'parentFolder' in context.properties:
     parent_obj = {
-        'id': context.properties['parentFolder'],
-        'type': 'folder',
+      'id': context.properties['parentFolder'],
+      'type': 'folder',
     }
   else:
     parent_obj = {
-        'id': context.properties['parentOrganization'],
-        'type': 'organization',
+      'id': context.properties['parentOrganization'],
+      'type': 'organization',
     }
 
   # Create the main project resource.
   resources.append({
-      'type': 'templates/project.py',
-      'name': 'fc-project',
-      'properties': {
-          'activateApis': FIRECLOUD_REQUIRED_APIS,
-          'billingAccountId': billing_account_id,
-          'billingAccountFriendlyName': billing_account_friendly_name,
-          'iamPolicies': create_iam_policies(context),
-          'labels': labels_obj,
-          'name': project_name,
-          # The project parent. For FireCloud, this should refer to the
-          # firecloud.org (or equivalent) GCP organization ID.
-          'parent': parent_obj,
-          'projectId': project_id,
-          # If true, this would remove the default compute egine service
-          # account. FireCloud doesn't use this SA, but we're leaving this set
-          # to False to avoid changing any legacy behavior, at least initially.
-          'removeDefaultSA': False,
-          # Removes the default VPC network for projects requiring stringent
-          # network security configurations.
-          'removeDefaultVPC': high_security_network,
-          'createUsageExportBucket': False,
-          # Always set up the storage logs and cromwell auth buckets for Firecloud
-          'storageLogsBucket': True,
-          'storageBucketLifecycle': storage_bucket_lifecycle,
-          'cromwellAuthBucket': True
-      }
+    'type': 'templates/project.py',
+    'name': 'fc-project',
+    'properties': {
+      'activateApis': FIRECLOUD_REQUIRED_APIS,
+      'billingAccountId': billing_account_id,
+      'billingAccountFriendlyName': billing_account_friendly_name,
+      'iamPolicies': create_iam_policies(context),
+      'labels': labels_obj,
+      'name': project_name,
+      # The project parent. For FireCloud, this should refer to the
+      # firecloud.org (or equivalent) GCP organization ID.
+      'parent': parent_obj,
+      'projectId': project_id,
+      # If true, this would remove the default compute egine service
+      # account. FireCloud doesn't use this SA, but we're leaving this set
+      # to False to avoid changing any legacy behavior, at least initially.
+      'removeDefaultSA': False,
+      # Removes the default VPC network for projects requiring stringent
+      # network security configurations.
+      'removeDefaultVPC': high_security_network,
+      'createUsageExportBucket': False,
+      # Always set up the storage logs and cromwell auth buckets for Firecloud
+      'storageLogsBucket': True,
+      'storageBucketLifecycle': storage_bucket_lifecycle,
+      'cromwellAuthBucket': True
+    }
   })
 
   if high_security_network:
     resources.extend(create_high_security_network(context))
     resources.extend(create_firewall(context))
     if context.properties['privateIpGoogleAccess']:
-        resources.extend(create_dns_zone(context))
+      resources.extend(create_dns_zone(context))
   else:
     resources.extend(create_default_network(context))
 
   if 'pubsubTopic' in context.properties:
     resources.extend(
-        create_pubsub_notification(
-            context,
-            # This is somewhat hacky, but we can't simply collect the name of each
-            # collected resource since template call nodes aren't "real" resources
-            # that can be part of a dependsOn stanza. So instead, we collect the
-            # names of all resources that are output by the network (which itself
-            # depends on the project). It doesn't seem to be possible to concatenate
-            # dependsOn arrays within the reference syntax, otherwise we could make
-            # this depend explicitly on all resources from the template nodes.
-            depends_on='$(ref.fc-network.resourceNames)',
-            status_string='COMPLETED'))
+      create_pubsub_notification(
+        context,
+        # This is somewhat hacky, but we can't simply collect the name of each
+        # collected resource since template call nodes aren't "real" resources
+        # that can be part of a dependsOn stanza. So instead, we collect the
+        # names of all resources that are output by the network (which itself
+        # depends on the project). It doesn't seem to be possible to concatenate
+        # dependsOn arrays within the reference syntax, otherwise we could make
+        # this depend explicitly on all resources from the template nodes.
+        depends_on='$(ref.fc-network.resourceNames)',
+        status_string='COMPLETED'))
 
   return {'resources': resources}
