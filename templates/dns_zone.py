@@ -13,7 +13,7 @@ def generate_config(context):
       # https://cloud.google.com/dns/docs/reference/v1/managedZones
       'type': 'gcp-types/dns-v1:managedZones',
       'properties': {
-          # 'name': 'test-dns-name',
+          'name': 'test-dns-name',
           'description': 'Routes googleapis.com to restricted.googleapis.com VIP',
           'dnsName': 'googleapis.com.',
           'project': project,
@@ -37,36 +37,36 @@ def generate_config(context):
 
 
 
-  # dns_resource_record_set = {
-  #     'name': 'dns-resource-record-set',
-  #     # https://cloud.google.com/dns/docs/reference/v1/resourceRecordSets
-  #     'type': 'gcp-types/dns-v1:resourceRecordSets',
-  #     'properties': {
-  #         'name': 'resource-record-set',
-  #         'managedZone': '$(ref.{resource_name}.name)'.format(resource_name=zone_resource_name),
-  #             #zone_resource['properties']['name'], #todo: not sure if this works
-  #         #'$(ref.{resource_name}.name)'.format(resource_name=zone_resource['name']),
-  #         'records': [{
-  #                 'name': '*.googleapis.com.',
-  #                 'type': 'CNAME',
-  #                 'ttl': 300,
-  #                 'rrdatas': [
-  #                     'restricted.googleapis.com.'
-  #                 ]
-  #             },{
-  #                 'name': 'restricted.googleapis.com.',
-  #                 'type': 'A',
-  #                 'ttl': 300,
-  #                 'rrdatas': [
-  #                     '199.36.153.4',
-  #                     '199.36.153.5',
-  #                     '199.36.153.6',
-  #                     '199.36.153.7'
-  #                 ]
-  #             }
-  #         ]
-  #     }
-  # }
-  # resources.append(dns_resource_record_set)
+  dns_resource_record_set = {
+      'name': 'dns-resource-record-set',
+      # https://cloud.google.com/dns/docs/reference/v1/resourceRecordSets
+      'type': 'gcp-types/dns-v1:resourceRecordSets',
+      'properties': {
+          'name': 'resource-record-set',
+          'managedZone': '$(ref.{resource_name}.name)'.format(resource_name=zone_resource_name),
+              #zone_resource['properties']['name'], #todo: not sure if this works
+          #'$(ref.{resource_name}.name)'.format(resource_name=zone_resource['name']),
+          'records': [{
+                  'name': '*.googleapis.com.',
+                  'type': 'CNAME',
+                  'ttl': 300,
+                  'rrdatas': [
+                      'restricted.googleapis.com.'
+                  ]
+              },{
+                  'name': 'restricted.googleapis.com.',
+                  'type': 'A',
+                  'ttl': 300,
+                  'rrdatas': [
+                      '199.36.153.4',
+                      '199.36.153.5',
+                      '199.36.153.6',
+                      '199.36.153.7'
+                  ]
+              }
+          ]
+      }
+  }
+  resources.append(dns_resource_record_set)
 
   return {'resources': resources}
