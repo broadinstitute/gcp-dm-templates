@@ -141,7 +141,7 @@ def create_dns_zone(context):
             'resourceName': 'dns-zone',
             'projectId': '$(ref.fc-project.projectId)',
             'networkName': '$(ref.fc-network.name)',
-            'dependsOn': '$(ref.fc-network.resourceName)'
+            'dependsOn': '$(ref.fc-network.resourceNames)'
         }
     }]
 
