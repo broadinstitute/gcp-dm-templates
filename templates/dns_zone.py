@@ -11,7 +11,7 @@ def generate_config(context):
   zone_resource = {
       'name': zone_resource_name,
       # https://cloud.google.com/dns/docs/reference/v1/managedZones
-      'type': 'gcp-types/dns-v1:managedZones',
+      'type': 'gcp-types/dns-v2beta1:managedZones',
       'properties': {
           'description': 'Routes googleapis.com to restricted.googleapis.com VIP',
           'dnsName': 'googleapis.com.',
@@ -39,12 +39,12 @@ def generate_config(context):
   dns_resource_record_set = {
       'name': 'dns-resource-record-set',
       # https://cloud.google.com/dns/docs/reference/v1/resourceRecordSets
-      'type': 'gcp-types/dns-v1:resourceRecordSets',
+      'type': 'gcp-types/dns-v2beta1:resourceRecordSets',
       'properties': {
           'project': project,
           'name': 'resource-record-set',
           'managedZone': '$(ref.{resource_name}.name)'.format(resource_name=zone_resource_name),
-          'kind': 'dns#resourceRecordSet',
+          # 'kind': 'dns#resourceRecordSet',
           'records': [{
                   'name': '*.googleapis.com.',
                   'type': 'CNAME',
