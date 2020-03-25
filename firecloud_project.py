@@ -121,7 +121,6 @@ def create_high_security_network(context):
   }]
 
 def create_dns_zone(context):
-    # todo: fix indentation (4 -> 2 spaces)
     """Creates a DNS Zone for the use of Private Google Access
 
     The DNS Zone config depends on the VPC network having been completely

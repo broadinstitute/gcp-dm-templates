@@ -65,7 +65,6 @@ def generate_config(context):
         'properties': subnetwork
     })
 
-    # todo: this is the step 2 that we skipped in manual testing ; try it out
   if context.properties.get('createCustomStaticRoute', False):
       resources.append({
           'name': 'private-google-access-route',
