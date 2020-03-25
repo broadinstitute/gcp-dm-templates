@@ -42,6 +42,7 @@ def generate_config(context):
       'type': 'gcp-types/dns-v1:resourceRecordSets',
       'properties': {
           'project': project,
+          'name': 'resource-record-set',
           'managedZone': '$(ref.{resource_name}.name)'.format(resource_name=zone_resource_name),
           'records': [{
                   # 'name': '*.googleapis.com.',
