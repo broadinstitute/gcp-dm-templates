@@ -43,17 +43,15 @@ def generate_config(context):
       'properties': {
           'project': project,
           'managedZone': '$(ref.{resource_name}.name)'.format(resource_name=zone_resource_name),
-              #zone_resource['properties']['name'], #todo: not sure if this works
-          #'$(ref.{resource_name}.name)'.format(resource_name=zone_resource['name']),
           'records': [{
-                  'name': '*.googleapis.com.',
+                  # 'name': '*.googleapis.com.',
                   'type': 'CNAME',
                   'ttl': 300,
                   'rrdatas': [
                       'restricted.googleapis.com.'
                   ]
               },{
-                  'name': 'restricted.googleapis.com.',
+                  # 'name': 'restricted.googleapis.com.',
                   'type': 'A',
                   'ttl': 300,
                   'rrdatas': [
