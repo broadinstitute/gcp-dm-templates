@@ -383,9 +383,15 @@ def generate_config(context):
   # Save this template's version number and all parameters inputs to the project metadata to keep track of what
   # operations were performed on a project. Label text requirements: https://cloud.google.com/deployment-manager/docs/creating-managing-labels#requirements
   labels_obj.update({
-    "firecloud-project-template-version" : "1",
-    "context-properties" : context.properties
+    "firecloud-project-template-version" : "1"
   })
+
+  for k, v in context.properties.items():
+    new_key = 'param--' + k
+    labels_obj.update({
+      new_key : v
+    })
+
 
   if high_security_network:
     labels_obj.update({
