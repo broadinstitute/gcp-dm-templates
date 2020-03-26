@@ -386,11 +386,16 @@ def generate_config(context):
     "firecloud-project-template-version" : "1"
   })
 
+  i=0
+  j=0
   for k, v in context.properties.items():
     new_key = 'param--' + k
     labels_obj.update({
-      new_key : v
+      # new_key : v
+      str(i) : str(j)
     })
+    i+=1
+    j+=1
 
 
   if high_security_network:
