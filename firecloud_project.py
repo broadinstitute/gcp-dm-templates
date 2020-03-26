@@ -392,7 +392,7 @@ def generate_config(context):
     new_key = 'param--' + k
     labels_obj.update({
       # new_key : v
-      str(i) : str(j)
+      'a' + str(i) : str(j)
     })
     i+=1
     j+=1
