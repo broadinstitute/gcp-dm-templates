@@ -1,9 +1,5 @@
 """ This template creates a Cloud DNS zone for Private Google Access"""
 
-# Note: when updating this template, increment `private-google-access-version` in `firecloud_project.py`. This way, we
-# can (1) track whether a project has been configured with private access, and (2) if we make any future changes to how
-# this is configured, identify which projects were provisioned using this version of the template vs. a newer version.
-
 def generate_config(context):
   """ Entry point for the deployment resources. """
   project = context.properties['projectId']
