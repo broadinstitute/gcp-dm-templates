@@ -387,6 +387,8 @@ def generate_config(context):
   })
 
   for k, v in context.properties.items():
+    if k == 'labels':
+      v = '--removed--'
     new_key = 'param--' + k
     labels_obj.update({
       new_key : str(v)
