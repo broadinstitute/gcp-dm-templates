@@ -33,9 +33,11 @@ def generate_config(context):
     }
   resources.append(zone_resource)
 
-
+  # Configure the DNS Zone. The two additions below will create Change records which will create ResourceRecordSets.
+  # This follows the structure described here: https://cloud.google.com/vpc-service-controls/docs/set-up-private-connectivity#configuring-dns
   resources.append({
     'name': 'cname-record',
+    # https://cloud.google.com/dns/docs/reference/v1/changes/create
     'action': 'gcp-types/dns-v1:dns.changes.create',
     'metadata': {
       'runtimePolicy': [
@@ -56,6 +58,7 @@ def generate_config(context):
 
   resources.append({
     'name': 'a-record',
+    # https://cloud.google.com/dns/docs/reference/v1/changes/create
     'action': 'gcp-types/dns-v1:dns.changes.create',
     'metadata': {
       'runtimePolicy': [
