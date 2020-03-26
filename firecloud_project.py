@@ -374,6 +374,7 @@ def generate_config(context):
   high_security_network = context.properties.get('highSecurityNetwork', False)
   storage_bucket_lifecycle = context.properties.get('storageBucketLifecycle', 180)
   billing_account_friendly_name = context.properties.get('billingAccountFriendlyName', billing_account_id)
+  private_google_access = context.properties.get('privateIpGoogleAccess', False)
   # Use a project name if given, otherwise it's safe to fallback to use the
   # project ID as the name.
   project_name = context.properties.get('projectName', project_id)
@@ -383,6 +384,11 @@ def generate_config(context):
     labels_obj.update({
       "vpc-network-name" : FIRECLOUD_VPC_NETWORK_NAME,
       "vpc-subnetwork-name" : FIRECLOUD_VPC_SUBNETWORK_NAME
+    })
+
+  if private_google_access:
+    labels_obj.update({
+      "private-google-access-version" : 1
     })
 
   if 'parentFolder' in context.properties:
