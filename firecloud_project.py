@@ -35,6 +35,7 @@ FIRECLOUD_NETWORK_REGIONS = { region: iprange(128 + 2*i) for (i, region) in enum
 FIRECLOUD_REQUIRED_APIS = [
   "bigquery-json.googleapis.com",
   "compute.googleapis.com",
+  "container.googleapis.com",
   "clouderrorreporting.googleapis.com",
   "cloudkms.googleapis.com",
   "cloudtrace.googleapis.com",
