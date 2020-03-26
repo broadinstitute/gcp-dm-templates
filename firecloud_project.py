@@ -391,8 +391,8 @@ def generate_config(context):
   LABEL_MAX_LENGTH = 63
   ALLOWED_CHARS = 'a-z0-9-_'
   for k, v in context.properties.items():
-    new_key = 'param--' + lower(k) # converts to lowercase
-    new_value = lower(str(v)[0:LABEL_MAX_LENGTH])
+    new_key = 'param--' + k.lower() # converts to lowercase
+    new_value = str(v)[0:LABEL_MAX_LENGTH].lower()
     new_value =  re.sub(r'[^'+ ALLOWED_CHARS + ']+', '--', new_value) #replace illegal character with '--'
 
     labels_obj.update({
