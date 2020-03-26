@@ -4,6 +4,7 @@ This is meant to be used as a composite type using the GCP Cloud Deployment
 Manager. See the .py.schema file for more details on how to use the composite
 type.
 """
+import re
 
 GCP_REGIONS = ['asia-east1',
                'asia-east2',
@@ -381,17 +382,23 @@ def generate_config(context):
   labels_obj = context.properties.get('labels', {})
 
   # Save this template's version number and all parameters inputs to the project metadata to keep track of what
-  # operations were performed on a project. Label text requirements: https://cloud.google.com/deployment-manager/docs/creating-managing-labels#requirements
+  # operations were performed on a project.
   labels_obj.update({
     "firecloud-project-template-version" : "1"
   })
 
+  #Label text requirements include max length of 63 chars and only allowing (a-z, 0-9, -, _). Link: https://cloud.google.com/deployment-manager/docs/creating-managing-labels#requirements
+  LABEL_MAX_LENGTH = 63
   for k, v in context.properties.items():
     if k == 'labels':
       v = '--removed--'
+
     new_key = 'param--' + k
+    new_value = str(v)[0:LABEL_MAX_LENGTH]
+    new_value =  re.sub(r'[^a-z0-9-_]+', '', new_value)
+
     labels_obj.update({
-      new_key : str(v)
+      new_key : new_value
     })
 
 
