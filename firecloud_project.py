@@ -388,7 +388,7 @@ def generate_config(context):
 
   if private_google_access:
     labels_obj.update({
-      "private-google-access-version" : 1
+      "private-google-access-version" : "1"
     })
 
   if 'parentFolder' in context.properties:
