@@ -120,7 +120,7 @@ def create_high_security_network(context):
     },
   }]
 
-def create_dns_zone(context):
+def create_private_google_access_dns_zone(context):
   """Creates a DNS Zone for the use of Private Google Access
 
   The DNS Zone config depends on the VPC network having been completely
@@ -131,13 +131,13 @@ def create_dns_zone(context):
     context: the DM context object.
 
   Returns:
-    A resource instantiating the dns_zone.py sub-template.
+    A resource instantiating the private_google_access_dns_zone.py sub-template.
   """
   return [{
-    'type': 'templates/dns_zone.py',
-    'name': 'fc-dns-zone',
+    'type': 'templates/private_google_access_dns_zone.py',
+    'name': 'fc-private-google-access-dns-zone',
     'properties': {
-      'resourceName': 'dns-zone',
+      'resourceName': 'private-google-access-dns-zone',
       'projectId': '$(ref.fc-project.projectId)',
       'network': '$(ref.fc-network.selfLink)',
       'dependsOn': '$(ref.fc-network.resourceNames)'
@@ -430,7 +430,7 @@ def generate_config(context):
     resources.extend(create_high_security_network(context))
     resources.extend(create_firewall(context))
     if context.properties['privateIpGoogleAccess']:
-      resources.extend(create_dns_zone(context))
+      resources.extend(create_private_google_access_dns_zone(context))
   else:
     resources.extend(create_default_network(context))
 

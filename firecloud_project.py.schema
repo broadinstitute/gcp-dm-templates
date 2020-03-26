@@ -13,13 +13,13 @@ imports:
   - path: templates/firewall.py
   - path: templates/network.py
   - path: templates/project.py
-  - path: templates/dns_zone.py
+  - path: templates/private_google_access_dns_zone.py
 
 required:
   - billingAccountId
   - parentOrganization
   - projectId
-  
+
 
 properties:
   billingAccountId:
