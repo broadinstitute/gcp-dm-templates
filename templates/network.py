@@ -71,7 +71,10 @@ def generate_config(context):
       # https://cloud.google.com/compute/docs/reference/rest/v1/routes
       'action': 'gcp-types/compute-v1:compute.routes.insert',
       'metadata': {
-        'dependsOn': [resource_name]
+        'dependsOn': [resource_name],
+        'runtimePolicy': [
+          'CREATE',
+        ],
       },
       'properties': {
         'name': 'private-google-access-route',
