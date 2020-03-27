@@ -387,15 +387,16 @@ def generate_config(context):
     "firecloud-project-template-version" : "1"
   })
 
-  #Label text requirements include max length of 63 chars and only allowing (a-z, 0-9, -, _). Link: https://cloud.google.com/deployment-manager/docs/creating-managing-labels#requirements
+  # Label text requirements include max length of 63 chars, only allowing (a-z, 0-9, -, _), and value must start with a
+  # letter. Link: https://cloud.google.com/deployment-manager/docs/creating-managing-labels#requirements
   LABEL_MAX_LENGTH = 63
-  ALLOWED_CHARS = 'a-z0-9-_'
-  ALLOWED_STARTING_CHARS = 'a-z'
+  ALLOWED_CHARS_COMPLEMENT = r'[^a-z0-9-_]+'
+  ALLOWED_STARTING_CHARS_COMPLEMENT = r'^[^a-z]*'
   for k, v in context.properties.items():
     new_key = 'param--' + k.lower() # converts to lowercase
     new_value = str(v).lower()
-    new_value = re.sub(r'[^{}]+'.format(ALLOWED_CHARS), '--', new_value) # remove all illegal characters and replace with '--'
-    new_value = re.sub(r'^[^{}]*'.format(ALLOWED_STARTING_CHARS), '', new_value) # ensure first char is a lowercase letter
+    new_value = re.sub(ALLOWED_CHARS_COMPLEMENT, '--', new_value) # remove all illegal characters and replace with '--'
+    new_value = re.sub(ALLOWED_STARTING_CHARS_COMPLEMENT, '', new_value) # make sure first char is a lowercase letter
 
     labels_obj.update({
       new_key[0:LABEL_MAX_LENGTH] : new_value[0:LABEL_MAX_LENGTH]
