@@ -3,8 +3,12 @@
 This is meant to be used as a composite type using the GCP Cloud Deployment
 Manager. See the .py.schema file for more details on how to use the composite
 type.
+
+Note: when updating DM templates, update the FIRECLOUD_PROJECT_TEMPLATE_VERSION for any major feature change.
 """
 import re
+
+FIRECLOUD_PROJECT_TEMPLATE_VERSION = '1'
 
 GCP_REGIONS = ['asia-east1',
                'asia-east2',
@@ -384,11 +388,11 @@ def generate_config(context):
   # Save this template's version number and all parameters inputs to the project metadata to keep track of what
   # operations were performed on a project.
   labels_obj.update({
-    "firecloud-project-template-version" : "1"
+    "firecloud-project-template-version" : str(FIRECLOUD_PROJECT_TEMPLATE_VERSION)
   })
 
-  # Label text requirements include max length of 63 chars, only allowing (a-z, 0-9, -, _), and value must start with a
-  # letter. Link: https://cloud.google.com/deployment-manager/docs/creating-managing-labels#requirements
+  # Label text requirements include max length of 63 chars, only allowing (a-z, 0-9, -, _), value must start with a
+  # letter, and value must be a string. Link: https://cloud.google.com/deployment-manager/docs/creating-managing-labels#requirements
   LABEL_MAX_LENGTH = 63
   ALLOWED_CHARS_COMPLEMENT = r'[^a-z0-9-_]+'
   ALLOWED_STARTING_CHARS_COMPLEMENT = r'^[^a-z]*'
