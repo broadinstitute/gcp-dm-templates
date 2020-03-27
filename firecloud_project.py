@@ -390,13 +390,15 @@ def generate_config(context):
   #Label text requirements include max length of 63 chars and only allowing (a-z, 0-9, -, _). Link: https://cloud.google.com/deployment-manager/docs/creating-managing-labels#requirements
   LABEL_MAX_LENGTH = 63
   ALLOWED_CHARS = 'a-z0-9-_'
+  ALLOWED_STARTING_CHARS = 'a-z'
   for k, v in context.properties.items():
     new_key = 'param--' + k.lower() # converts to lowercase
     new_value = str(v).lower()
-    new_value =  re.sub(r'[^'+ ALLOWED_CHARS + ']+', '', new_value) # remove all illegal characters
+    new_value = re.sub(r'[^{}]+'.format(ALLOWED_CHARS), '--', new_value) # remove all illegal characters and replace with '--'
+    new_value = re.sub(r'^[^{}]*'.format(ALLOWED_STARTING_CHARS), '', new_value) # ensure first char is a lowercase letter
 
     labels_obj.update({
-      new_key : new_value[0:LABEL_MAX_LENGTH]
+      new_key[0:LABEL_MAX_LENGTH] : new_value[0:LABEL_MAX_LENGTH]
     })
 
 
