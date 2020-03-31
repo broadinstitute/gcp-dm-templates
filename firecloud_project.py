@@ -106,6 +106,7 @@ def create_high_security_network(context):
       A resource instantiating the network.py sub-template.
   """
   subnetworks = []
+  private_ip_google_access = context.properties.get('privateIpGoogleAccess', False)
   for region in FIRECLOUD_NETWORK_REGIONS:
     subnetworks.append({
       # We append the region to the subnetwork's DM resource name, since
@@ -117,7 +118,7 @@ def create_high_security_network(context):
       'region': region,
       'ipCidrRange': FIRECLOUD_NETWORK_REGIONS[region],
       'enableFlowLogs': context.properties.get('enableFlowLogs', False),
-      'privateIpGoogleAccess': context.properties.get('privateIpGoogleAccess', False)
+      'privateIpGoogleAccess': private_ip_google_access
     })
 
   return [{
@@ -134,7 +135,7 @@ def create_high_security_network(context):
       # template-call nodes, so we can't have this resource itself depend on
       # the project-wide resources.
       'dependsOn': '$(ref.fc-project.resourceNames)',
-      'createCustomStaticRoute': context.properties.get('privateIpGoogleAccess', False)
+      'createCustomStaticRoute': private_ip_google_access
     },
   }]
 
@@ -390,6 +391,7 @@ def generate_config(context):
 
   # Optional properties, with defaults.
   high_security_network = context.properties.get('highSecurityNetwork', False)
+  private_ip_google_access = context.properties.get('privateIpGoogleAccess', False)
   storage_bucket_lifecycle = context.properties.get('storageBucketLifecycle', 180)
   billing_account_friendly_name = context.properties.get('billingAccountFriendlyName', billing_account_id)
   # Use a project name if given, otherwise it's safe to fallback to use the
@@ -469,7 +471,7 @@ def generate_config(context):
   if high_security_network:
     resources.extend(create_high_security_network(context))
     resources.extend(create_firewall(context))
-    if context.properties['privateIpGoogleAccess']:
+    if private_ip_google_access:
       resources.extend(create_private_google_access_dns_zone(context))
   else:
     resources.extend(create_default_network(context))
