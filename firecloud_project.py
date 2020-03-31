@@ -4,11 +4,23 @@ This is meant to be used as a composite type using the GCP Cloud Deployment
 Manager. See the .py.schema file for more details on how to use the composite
 type.
 
-Note: when updating DM templates, update the FIRECLOUD_PROJECT_TEMPLATE_VERSION for any major feature change.
+
+Template Version History
+  Instructions:
+    When updating DM templates, update the FIRECLOUD_PROJECT_TEMPLATE_VERSION_ID for any major feature change and add
+    summarizing notes below.
+  Version ID notes:
+    1:
+      Initial DM template(s), including all changes made prior to March 2020. Includes parameters for high-security
+      networks and VPC flow logs in support of AoU security needs. This version number is not included in project
+      metadata / labels. The absence of a number on a project should be implied to be this version.
+    2:
+      Added a privateIpGoogleAccess parameter, which fixes an issue where GCS bucket traffic could not be easily
+      distinguished from internet egress. Started tracking template version numbers in project labels.
 """
 import re
 
-FIRECLOUD_PROJECT_TEMPLATE_VERSION = '1'
+FIRECLOUD_PROJECT_TEMPLATE_VERSION_ID = '2'
 
 GCP_REGIONS = ['asia-east1',
                'asia-east2',
@@ -388,7 +400,7 @@ def generate_config(context):
   # Save this template's version number and all parameters inputs to the project metadata to keep track of what
   # operations were performed on a project.
   labels_obj.update({
-    "firecloud-project-template-version" : str(FIRECLOUD_PROJECT_TEMPLATE_VERSION)
+    "firecloud-project-template-version" : str(FIRECLOUD_PROJECT_TEMPLATE_VERSION_ID)
   })
 
   # Label text requirements include max length of 63 chars, only allowing (a-z, 0-9, -, _), value must start with a
@@ -397,7 +409,7 @@ def generate_config(context):
   ALLOWED_CHARS_COMPLEMENT = r'[^a-z0-9-_]+'
   ALLOWED_STARTING_CHARS_COMPLEMENT = r'^[^a-z]*'
   for k, v in context.properties.items():
-    new_key = 'param--' + k.lower() # converts to lowercase
+    new_key = 'param--' + k.lower()
     new_value = str(v).lower()
     new_value = re.sub(ALLOWED_CHARS_COMPLEMENT, '--', new_value) # remove all illegal characters and replace with '--'
     new_value = re.sub(ALLOWED_STARTING_CHARS_COMPLEMENT, '', new_value) # make sure first char is a lowercase letter
