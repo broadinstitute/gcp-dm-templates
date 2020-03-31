@@ -185,5 +185,41 @@ class FirecloudProjectTest(unittest.TestCase):
                      '$(ref.fc-network.resourceNames)')
 
 
+  def test_private_ip_google_access(self):
+    pass
+
+
+  def test_satisfy_label_requiements(self):
+    """Tests the logic in making the params into labels"""
+
+    class LabelTestCase:
+      def __init__(self, k, v, expected_k, expected_v):
+        self.k = k
+        self.v = v
+        self.expected_k = expected_k
+        self.expected_v = expected_v
+        self.actual_k, self.actual_v = firecloud_project.satisfy_label_requiements(self.k, self.v)
+
+      def get_expected_and_actual_labels(self):
+        return (self.expected_k, self.expected_v), (self.actual_k, self.actual_v)
+
+    tests = [
+      LabelTestCase('UPPERCASE', 'UPPERCASE', 'uppercase', 'uppercase'),
+      LabelTestCase('value-illegal_chars', '123-value-illegal_chars-123!@#', 'value-illegal_chars', '123-value-illegal_chars-123--'),
+      LabelTestCase('key-illegal_chars-123!@#', 'key-illegal_chars', 'key-illegal_chars-123--', 'key-illegal_chars'),
+      LabelTestCase('123!@#-key-illegal_prefix', 'key-illegal_prefix', 'key-illegal_prefix', 'key-illegal_prefix'),
+      LabelTestCase('too-long-key-and-value-abcdefghijklmnopqrstuvwxyz_0123456789-abcdefghijklmnopqrstuvwxyz_0123456789',
+                    'too-long-key-and-value-abcdefghijklmnopqrstuvwxyz_0123456789-abcdefghijklmnopqrstuvwxyz_0123456789',
+                    'too-long-key-and-value-abcdefghijklmnopqrstuvwxyz_0123456789-ab',
+                    'too-long-key-and-value-abcdefghijklmnopqrstuvwxyz_0123456789-ab'
+                    ),
+      LabelTestCase('value-is-an-object', ['asdf:1234', '1234:asdf'], 'value-is-an-object', '--asdf--1234--1234--asdf--'),
+    ]
+
+    for testcase in tests:
+      expected, actual = testcase.get_expected_and_actual_labels()
+      self.assertEqual(expected, actual)
+
+
 if __name__ == '__main__':
   unittest.main()
