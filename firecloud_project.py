@@ -364,6 +364,37 @@ def create_pubsub_notification(context, depends_on, status_string):
   }]
 
 
+def satisfy_label_requiements(label_map):
+  """Takes in a map and returns a map[string: string] that satisfies the label text requirements.
+
+  Label text requirements include max length of 63 chars, only allowing (a-z, 0-9, -, _),
+  value must start with a letter, and value must be a string.
+  https://cloud.google.com/deployment-manager/docs/creating-managing-labels#requirements
+
+  Arguments:
+    label_map: a map
+
+  Returns:
+    A map[string: string] that satisfies the label text requirements for key and value
+  """
+
+  LABEL_MAX_LENGTH = 63
+  ALLOWED_CHARS_COMPLEMENT = r'[^a-z0-9-_]+'
+  ALLOWED_STARTING_CHARS_COMPLEMENT = r'^[^a-z]*'
+
+  new_label_map = {}
+  for k, v in label_map:
+    new_key = 'param--' + k.lower()
+    new_key = new_key[0:LABEL_MAX_LENGTH]
+    new_value = str(v).lower()
+    new_value = re.sub(ALLOWED_CHARS_COMPLEMENT, '--', new_value) # remove all illegal characters and replace with '--'
+    new_value = re.sub(ALLOWED_STARTING_CHARS_COMPLEMENT, '', new_value) # make sure first char is a lowercase letter
+    new_value = new_value[0:LABEL_MAX_LENGTH]
+    new_label_map.update({new_key: new_value})
+
+  return new_label_map
+
+
 def generate_config(context):
   """Entry point, called by deployment manager.
 
@@ -405,19 +436,10 @@ def generate_config(context):
     "firecloud-project-template-version" : str(FIRECLOUD_PROJECT_TEMPLATE_VERSION_ID)
   })
 
-  # Label text requirements include max length of 63 chars, only allowing (a-z, 0-9, -, _), value must start with a
-  # letter, and value must be a string. Link: https://cloud.google.com/deployment-manager/docs/creating-managing-labels#requirements
-  LABEL_MAX_LENGTH = 63
-  ALLOWED_CHARS_COMPLEMENT = r'[^a-z0-9-_]+'
-  ALLOWED_STARTING_CHARS_COMPLEMENT = r'^[^a-z]*'
-  for k, v in context.properties.items():
-    new_key = 'param--' + k.lower()
-    new_value = str(v).lower()
-    new_value = re.sub(ALLOWED_CHARS_COMPLEMENT, '--', new_value) # remove all illegal characters and replace with '--'
-    new_value = re.sub(ALLOWED_STARTING_CHARS_COMPLEMENT, '', new_value) # make sure first char is a lowercase letter
-
+  labelized_params = satisfy_label_requiements(context.properties.items())
+  for k, v in labelized_params:
     labels_obj.update({
-      new_key[0:LABEL_MAX_LENGTH] : new_value[0:LABEL_MAX_LENGTH]
+      k : v
     })
 
 
