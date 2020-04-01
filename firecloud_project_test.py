@@ -97,6 +97,26 @@ class FirecloudProjectTest(unittest.TestCase):
     self.assertEqual([x['name'] for x in firewall['properties']['rules']],
                      ['allow-icmp', 'allow-internal', 'leonardo-ssl'])
 
+  def test_private_ip_google_access(self):
+    """Verifying changes are made with the privateIpGoogleAccess option."""
+    self.context.properties['highSecurityNetwork'] = True
+    self.context.properties['enableFlowLogs'] = True
+    self.context.properties['privateIpGoogleAccess'] = True
+    resources = firecloud_project.generate_config(self.context)['resources']
+
+    # Network has enabled custom static route
+    # Not sure why, but the route does not appear in the config but gets created in the deployment
+    network = resource_with_name(resources, 'fc-network')
+    self.assertTrue(network['properties']['createCustomStaticRoute'])
+
+    # Each subnetwork has privateIpGoogleAccess enabled
+    for subnetwork in network['properties']['subnetworks']:
+      self.assertTrue(subnetwork['privateIpGoogleAccess'])
+
+    # Verify that the Private Google Access DNS Zone is created
+    dns_zone = resource_with_name(resources, 'fc-private-google-access-dns-zone')
+    self.assertEquals(dns_zone['properties']['resourceName'], 'private-google-access-dns-zone')
+
   def test_iam_policies(self):
     """Tests that IAM grants are correctly generated for FC owners & groups."""
     props = self.context.properties
@@ -184,13 +204,8 @@ class FirecloudProjectTest(unittest.TestCase):
     self.assertEqual(completed['metadata']['dependsOn'],
                      '$(ref.fc-network.resourceNames)')
 
-
-  def test_private_ip_google_access(self):
-    pass
-
-
   def test_satisfy_label_requiements(self):
-    """Tests the logic in making the params into labels"""
+    """Tests the logic in converting params into labels"""
 
     class LabelTestCase:
       def __init__(self, k, v, expected_k, expected_v):
