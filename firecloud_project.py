@@ -385,11 +385,11 @@ def satisfy_label_requiements(k, v):
 
   new_k = str(k).lower()
   new_k = re.sub(KEY_ALLOWED_STARTING_CHARS_COMPLEMENT, '', new_k) # make sure first char of key is a lowercase letter
-  new_k = re.sub(ALLOWED_CHARS_COMPLEMENT, '--', new_k) # remove all illegal characters and replace with '--'
+  new_k = re.sub(ALLOWED_CHARS_COMPLEMENT, '--', new_k) # remove each group of illegal characters and replace with '--'
   new_k = new_k[0:LABEL_MAX_LENGTH]
 
   new_v = str(v).lower()
-  new_v = re.sub(ALLOWED_CHARS_COMPLEMENT, '--', new_v) # remove all illegal characters and replace with '--'
+  new_v = re.sub(ALLOWED_CHARS_COMPLEMENT, '--', new_v) # remove each group of illegal characters and replace with '--'
   new_v = new_v[0:LABEL_MAX_LENGTH]
 
   return new_k, new_v
