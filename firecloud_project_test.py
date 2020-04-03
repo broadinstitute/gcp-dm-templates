@@ -97,6 +97,26 @@ class FirecloudProjectTest(unittest.TestCase):
     self.assertEqual([x['name'] for x in firewall['properties']['rules']],
                      ['allow-icmp', 'allow-internal', 'leonardo-ssl'])
 
+  def test_private_ip_google_access(self):
+    """Verifying changes are made with the privateIpGoogleAccess option."""
+    self.context.properties['highSecurityNetwork'] = True
+    self.context.properties['enableFlowLogs'] = True
+    self.context.properties['privateIpGoogleAccess'] = True
+    resources = firecloud_project.generate_config(self.context)['resources']
+
+    # Network has enabled custom static route
+    # Not sure why, but the route does not appear in the config but gets created in the deployment
+    network = resource_with_name(resources, 'fc-network')
+    self.assertTrue(network['properties']['createCustomStaticRoute'])
+
+    # Each subnetwork has privateIpGoogleAccess enabled
+    for subnetwork in network['properties']['subnetworks']:
+      self.assertTrue(subnetwork['privateIpGoogleAccess'])
+
+    # Verify that the Private Google Access DNS Zone is created
+    dns_zone = resource_with_name(resources, 'fc-private-google-access-dns-zone')
+    self.assertEquals(dns_zone['properties']['resourceName'], 'private-google-access-dns-zone')
+
   def test_iam_policies(self):
     """Tests that IAM grants are correctly generated for FC owners & groups."""
     props = self.context.properties
@@ -183,6 +203,37 @@ class FirecloudProjectTest(unittest.TestCase):
     # this.
     self.assertEqual(completed['metadata']['dependsOn'],
                      '$(ref.fc-network.resourceNames)')
+
+  def test_satisfy_label_requirements(self):
+    """Tests the logic in converting params into labels"""
+
+    class LabelTestCase:
+      def __init__(self, k, v, expected_k, expected_v):
+        self.k = k
+        self.v = v
+        self.expected_k = expected_k
+        self.expected_v = expected_v
+        self.actual_k, self.actual_v = firecloud_project.satisfy_label_requirements(self.k, self.v)
+
+      def get_expected_and_actual_labels(self):
+        return (self.expected_k, self.expected_v), (self.actual_k, self.actual_v)
+
+    tests = [
+      LabelTestCase('UPPERCASE', 'UPPERCASE', 'uppercase', 'uppercase'),
+      LabelTestCase('value-illegal_chars', '123-value-illegal_chars-123!@#', 'value-illegal_chars', '123-value-illegal_chars-123--'),
+      LabelTestCase('key-illegal_chars-123!@#', 'key-illegal_chars', 'key-illegal_chars-123--', 'key-illegal_chars'),
+      LabelTestCase('123!@#-key-illegal_prefix', 'key-illegal_prefix', 'key-illegal_prefix', 'key-illegal_prefix'),
+      LabelTestCase('too-long-key-and-value-abcdefghijklmnopqrstuvwxyz_0123456789-abcdefghijklmnopqrstuvwxyz_0123456789',
+                    'too-long-key-and-value-abcdefghijklmnopqrstuvwxyz_0123456789-abcdefghijklmnopqrstuvwxyz_0123456789',
+                    'too-long-key-and-value-abcdefghijklmnopqrstuvwxyz_0123456789-ab',
+                    'too-long-key-and-value-abcdefghijklmnopqrstuvwxyz_0123456789-ab'
+                    ),
+      LabelTestCase('value-is-an-object', ['asdf:1234', '1234:asdf'], 'value-is-an-object', '--asdf--1234--1234--asdf--'),
+    ]
+
+    for testcase in tests:
+      expected, actual = testcase.get_expected_and_actual_labels()
+      self.assertEqual(expected, actual)
 
 
 if __name__ == '__main__':

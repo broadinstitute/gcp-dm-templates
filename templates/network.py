@@ -23,30 +23,30 @@ def generate_config(context):
   resources = []
 
   network_resource = {
-      'name': resource_name,
-      'type': 'gcp-types/compute-v1:networks',
-      'properties': {
-          'name':
-              context.properties['name'],
-          'project':
-              context.properties['projectId'],
-          'autoCreateSubnetworks':
-              context.properties.get('autoCreateSubnetworks', False),
-      },
+    'name': resource_name,
+    'type': 'gcp-types/compute-v1:networks',
+    'properties': {
+      'name':
+        context.properties['name'],
+      'project':
+        context.properties['projectId'],
+      'autoCreateSubnetworks':
+        context.properties.get('autoCreateSubnetworks', False),
+    },
   }
   resources.append(network_resource)
 
   # If a dependsOn property was passed in, the network should depend on that.
   if 'dependsOn' in context.properties:
     network_resource['metadata'] = {
-        'dependsOn': context.properties['dependsOn']
+      'dependsOn': context.properties['dependsOn']
     }
 
   # Create the network within a specified project if the property is
   # non-empty.
   if 'projectId' in context.properties:
     network_resource['properties']['project'] = (
-        context.properties['projectId'])
+      context.properties['projectId'])
 
   for subnetwork in context.properties.get('subnetworks', []):
     subnetwork['network'] = network_self_link
@@ -60,23 +60,44 @@ def generate_config(context):
       subnetwork['projectId'] = context.properties['projectId']
 
     resources.append({
-        'name': subnetwork['resourceName'],
-        'type': 'subnetwork.py',
-        'properties': subnetwork
+      'name': subnetwork['resourceName'],
+      'type': 'subnetwork.py',
+      'properties': subnetwork
+    })
+
+  if context.properties.get('createCustomStaticRoute', False):
+    resources.append({
+      'name': 'private-google-access-route',
+      # https://cloud.google.com/compute/docs/reference/rest/v1/routes
+      'action': 'gcp-types/compute-v1:compute.routes.insert',
+      'metadata': {
+        'dependsOn': [resource_name],
+        'runtimePolicy': [
+          'CREATE',
+        ],
+      },
+      'properties': {
+        'name': 'private-google-access-route',
+        'network': network_self_link,
+        'project': context.properties['projectId'],
+        'destRange': '199.36.153.4/30',
+        'nextHopGateway':
+          'projects/{}/global/gateways/default-internet-gateway'.format(context.properties['projectId'])
+      }
     })
 
   return {
-      'resources':
-          resources,
-      'outputs': [{
-          'name': 'name',
-          'value': resource_name
-      }, {
-          'name': 'selfLink',
-          'value': network_self_link
-      },
-                  {
-                      'name': 'resourceNames',
-                      'value': [resource['name'] for resource in resources]
-                  }]
+    'resources':
+      resources,
+    'outputs': [{
+      'name': 'name',
+      'value': resource_name
+    }, {
+      'name': 'selfLink',
+      'value': network_self_link
+    },
+      {
+        'name': 'resourceNames',
+        'value': [resource['name'] for resource in resources]
+      }]
   }
