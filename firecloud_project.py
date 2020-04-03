@@ -364,7 +364,7 @@ def create_pubsub_notification(context, depends_on, status_string):
   }]
 
 
-def satisfy_label_requiements(k, v):
+def satisfy_label_requirements(k, v):
   """Takes in a key and value and returns (String, String) that satisfies the label text requirements.
 
   Label text requirements include max length of 63 chars, only allowing (a-z, 0-9, -, _),
@@ -437,7 +437,7 @@ def generate_config(context):
   })
 
   for k, v in context.properties.items():
-    label_k, label_v = satisfy_label_requiements('param--' + str(k), v)
+    label_k, label_v = satisfy_label_requirements('param--' + str(k), v)
     labels_obj.update({
       label_k: label_v
     })

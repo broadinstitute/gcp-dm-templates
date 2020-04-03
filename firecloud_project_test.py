@@ -204,7 +204,7 @@ class FirecloudProjectTest(unittest.TestCase):
     self.assertEqual(completed['metadata']['dependsOn'],
                      '$(ref.fc-network.resourceNames)')
 
-  def test_satisfy_label_requiements(self):
+  def test_satisfy_label_requirements(self):
     """Tests the logic in converting params into labels"""
 
     class LabelTestCase:
@@ -213,7 +213,7 @@ class FirecloudProjectTest(unittest.TestCase):
         self.v = v
         self.expected_k = expected_k
         self.expected_v = expected_v
-        self.actual_k, self.actual_v = firecloud_project.satisfy_label_requiements(self.k, self.v)
+        self.actual_k, self.actual_v = firecloud_project.satisfy_label_requirements(self.k, self.v)
 
       def get_expected_and_actual_labels(self):
         return (self.expected_k, self.expected_v), (self.actual_k, self.actual_v)
