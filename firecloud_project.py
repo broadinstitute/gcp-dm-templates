@@ -53,6 +53,7 @@ FIRECLOUD_REQUIRED_APIS = [
   "bigquery-json.googleapis.com",
   "compute.googleapis.com",
   "container.googleapis.com",
+  "cloudbilling.googleapis.com",
   "clouderrorreporting.googleapis.com",
   "cloudkms.googleapis.com",
   "cloudtrace.googleapis.com",
