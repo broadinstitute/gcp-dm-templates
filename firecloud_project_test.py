@@ -95,7 +95,7 @@ class FirecloudProjectTest(unittest.TestCase):
     # A custom firewall resource is created with a set of expected rules.
     firewall = resource_with_name(resources, 'fc-firewall')
     self.assertEqual([x['name'] for x in firewall['properties']['rules']],
-                     ['allow-icmp', 'allow-internal', 'leonardo-ssl'])
+                     ['allow-internal', 'leonardo-ssl'])
 
   def test_private_ip_google_access(self):
     """Verifying changes are made with the privateIpGoogleAccess option."""
