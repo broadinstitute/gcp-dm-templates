@@ -190,16 +190,6 @@ def create_firewall(context):
         '$(ref.fc-network.resourceNames)',
       'rules': [
         {
-          'name': 'allow-icmp',
-          'description': 'Allow ICMP from anywhere.',
-          'allowed': [{
-            'IPProtocol': 'icmp',
-          }],
-          'direction': 'INGRESS',
-          'sourceRanges': ['0.0.0.0/0'],
-          'priority': 65534,
-        },
-        {
           'name': 'allow-internal',
           'description': 'Allow internal traffic on the network.',
           'allowed': [{
