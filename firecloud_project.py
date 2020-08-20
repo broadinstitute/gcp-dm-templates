@@ -65,7 +65,8 @@ FIRECLOUD_REQUIRED_APIS = [
   "monitoring.googleapis.com",
   "storage-api.googleapis.com",
   "storage-component.googleapis.com",
-  "dns.googleapis.com"
+  "dns.googleapis.com",
+  "container.googleapis.com"
 ]
 
 FIRECLOUD_VPC_NETWORK_NAME = "network"
