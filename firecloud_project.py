@@ -306,6 +306,18 @@ def create_iam_policies(context):
         'role': 'roles/bigquery.jobUser',
         'members': owners_and_viewers,
       },
+      {
+        # Owners & viewers are allowed to run BigQuery queries in the
+        # project (required for running BQ queries within notebooks).
+        'role': 'roles/logging.logWriter',
+        'members': owners_and_viewers,
+      },
+      {
+        # Owners & viewers are allowed to run BigQuery queries in the
+        # project (required for running BQ queries within notebooks).
+        'role': 'roles/monitoring.metricWriter',
+        'members': owners_and_viewers,
+      }
     ])
 
   # The requester pays role is an organization-wide role ID that should be
