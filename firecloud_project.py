@@ -307,14 +307,14 @@ def create_iam_policies(context):
         'members': owners_and_viewers,
       },
       {
-        # Owners & viewers are allowed to run BigQuery queries in the
-        # project (required for running BQ queries within notebooks).
+        # Owners & viewers are allowed to write logs in the
+        # project (required for gathering logs for user VMs).
         'role': 'roles/logging.logWriter',
         'members': owners_and_viewers,
       },
       {
-        # Owners & viewers are allowed to run BigQuery queries in the
-        # project (required for running BQ queries within notebooks).
+        # Owners & viewers are allowed to write metrics in the
+        # project (required for gathering metrics for user VMs).
         'role': 'roles/monitoring.metricWriter',
         'members': owners_and_viewers,
       }
