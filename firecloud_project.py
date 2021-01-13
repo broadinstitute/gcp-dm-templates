@@ -61,6 +61,7 @@ FIRECLOUD_REQUIRED_APIS = [
   "dataflow.googleapis.com",
   "dataproc.googleapis.com",
   "genomics.googleapis.com",
+  "lifesciences.googleapis.com",
   "logging.googleapis.com",
   "monitoring.googleapis.com",
   "storage-api.googleapis.com",
