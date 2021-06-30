@@ -43,8 +43,18 @@ GCP_REGIONS = ['asia-east1',
                'us-west1',
                'us-west2']
 
+# The subnet ranges are expanded from the default 4,096 IP addresses (/20) to 65,536 IP addresses (/16) per region.
+#
+# One can expand the IP ranges later. FYI there is NOT an equivalent `shrink-ip-range`, only
+# https://cloud.google.com/sdk/gcloud/reference/compute/networks/subnets/expand-ip-range
+#
+# /16 currently gives each region its own unique two-octal subnet.
+#
+# NOTE: As of 2021-06-30 the IP ranges here have drifted from the list in RBS.
+# The two repositories contain a different set of regions, and the regions have been assigned different subnets.
+# https://github.com/DataBiosphere/terra-resource-buffer/blob/42815268a8c18d37d582db92f73db717ce5a4d5f/src/main/java/bio/terra/buffer/service/resource/flight/CreateSubnetsStep.java
 def iprange(number):
-  return '10.' + str(number) + '.0.0/20'
+  return '10.' + str(number) + '.0.0/16'
 
 #assign IP ranges programmatically, because typing them out terrifies me
 FIRECLOUD_NETWORK_REGIONS = { region: iprange(128 + 2*i) for (i, region) in enumerate(GCP_REGIONS) }
