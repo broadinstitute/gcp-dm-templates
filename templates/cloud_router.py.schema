@@ -1,0 +1,218 @@
+# Based on https://github.com/GoogleCloudPlatform/cloud-foundation-toolkit/tree/v0.3.5/dm/templates/cloud_router
+# Original Copyright 2018 Google Inc. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+info:
+  title: Cloud Router
+  author: Sourced Group Inc.
+  version: 1.1.0
+  description: |
+    Deploys a Cloud Router.
+
+    For more information on this resource:
+    https://cloud.google.com/router/docs/
+
+    APIs endpoints used by this template:
+    - gcp-types/compute-v1:routers =>
+        https://cloud.google.com/compute/docs/reference/rest/v1/routers
+
+additionalProperties: false
+
+allOf:
+  - required:
+      - name
+      - projectId
+      - region
+      - network
+      - resourceName
+      - nats
+
+properties:
+  name:
+    type: string
+    description: |
+      Must comply with RFC1035. Specifically, the name must be 1-63 characters long and match
+      the regular expression [a-z]([-a-z0-9]*[a-z0-9])? which means the first character must be a lowercase letter,
+      and all following characters must be a dash, lowercase letter, or digit, except the last character,
+      which cannot be a dash.
+      Resource name would be used if omitted.
+  description:
+    type: string
+    description: |
+      An optional description of this resource. Provide this property when you create the resource.
+  projectId:
+    type: string
+    description: |
+      The project ID of the project containing the Cloud Router instance. The
+      Google apps domain is prefixed if applicable.
+  resourceName:
+    type: string
+    description: |
+      The Deployment Manager resource name. Must be unique within the
+      deployment.
+  region:
+    type: string
+    description: The URI of the region where the Cloud Router resides.
+  network:
+    type: string
+    description: |
+      The URL of the network to which the cloud router belongs. For example:
+        - projects/<project_name>/global/networks/<network_name>
+  nats:
+    type: array
+    description: |
+      A list of NAT services created in this router.
+    uniqueItems: True
+    items:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - sourceSubnetworkIpRangesToNat
+        - natIpAllocateOption
+      oneOf:
+        - allOf:
+            - properties:
+                sourceSubnetworkIpRangesToNat:
+                  enum:
+                    - ALL_SUBNETWORKS_ALL_IP_RANGES
+            - not:
+                required:
+                  - subnetworks
+        - allOf:
+            - properties:
+                sourceSubnetworkIpRangesToNat:
+                  enum:
+                    - ALL_SUBNETWORKS_ALL_PRIMARY_IP_RANGES
+            - not:
+                required:
+                  - subnetworks
+        - allOf:
+            - properties:
+                sourceSubnetworkIpRangesToNat:
+                  enum:
+                    - LIST_OF_SUBNETWORKS
+            - required:
+                - subnetworks
+      properties:
+        name:
+          type: string
+          description: |
+            Unique name of this Nat service. The name must be 1-63 characters long and comply with RFC1035.
+        sourceSubnetworkIpRangesToNat:
+          type: string
+          description: |
+            Specify the Nat option, which can take one of the following values:
+
+            - ALL_SUBNETWORKS_ALL_IP_RANGES: All of the IP ranges in every Subnetwork are allowed to Nat.
+            - ALL_SUBNETWORKS_ALL_PRIMARY_IP_RANGES: All of the primary IP ranges in every Subnetwork are allowed to Nat.
+            - LIST_OF_SUBNETWORKS: A list of Subnetworks are allowed to Nat (specified in the field subnetwork below)
+            The default is SUBNETWORK_IP_RANGE_TO_NAT_OPTION_UNSPECIFIED. Note that if this field contains
+            ALL_SUBNETWORKS_ALL_IP_RANGES or ALL_SUBNETWORKS_ALL_PRIMARY_IP_RANGES, then there should not be any
+            other Router.Nat section in any Router for this network in this region.
+          enum:
+            - ALL_SUBNETWORKS_ALL_IP_RANGES
+            - ALL_SUBNETWORKS_ALL_PRIMARY_IP_RANGES
+            - LIST_OF_SUBNETWORKS
+        subnetworks:
+          type: array
+          description: |
+            A list of Subnetwork resources whose traffic should be translated by NAT Gateway. It is used only
+            when LIST_OF_SUBNETWORKS is selected for the SubnetworkIpRangeToNatOption above.
+          uniqueItems: True
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - name
+            properties:
+              name:
+                type: string
+                description: |
+                  URL for the subnetwork resource that will use NAT.
+              sourceIpRangesToNat:
+                type: array
+                description: |
+                  Specify the options for NAT ranges in the Subnetwork. All options of a single value
+                  are valid except NAT_IP_RANGE_OPTION_UNSPECIFIED. The only valid option with
+                  multiple values is: ["PRIMARY_IP_RANGE", "LIST_OF_SECONDARY_IP_RANGES"] Default: [ALL_IP_RANGES]
+                uniqueItems: True
+                items:
+                  type: string
+              secondaryIpRangeNames:
+                type: array
+                description: |
+                  A list of the secondary ranges of the Subnetwork that are allowed to use NAT.
+                  This can be populated only if "LIST_OF_SECONDARY_IP_RANGES" is
+                  one of the values in sourceIpRangesToNat.
+                uniqueItems: True
+                items:
+                  type: string
+        natIps:
+          type: array
+          description: |
+            A list of URLs of the IP resources used for this Nat service. These IP addresses must
+            be valid static external IP addresses assigned to the project.
+          uniqueItems: True
+          items:
+            type: string
+        natIpAllocateOption:
+          type: string
+          description: |
+            Specify the NatIpAllocateOption, which can take one of the following values:
+
+            - MANUAL_ONLY: Uses only Nat IP addresses provided by customers.
+                When there are not enough specified Nat IPs, the Nat service fails for new VMs.
+            - AUTO_ONLY: Nat IPs are allocated by Google Cloud Platform; customers can't specify any Nat IPs.
+                When choosing AUTO_ONLY, then natIp should be empty.
+          enum:
+            - MANUAL_ONLY
+            - AUTO_ONLY
+        minPortsPerVm:
+          type: integer
+          description: |
+            Minimum number of ports allocated to a VM from this NAT config. If not set, a default
+            number of ports is allocated to a VM. This is rounded up to the nearest power of 2.
+            For example, if the value of this field is 50, at least 64 ports are allocated to a VM.
+        udpIdleTimeoutSec:
+          type: integer
+          description: |
+            Timeout (in seconds) for UDP connections. Defaults to 30s if not set.
+        icmpIdleTimeoutSec:
+          type: integer
+          description: |
+            Timeout (in seconds) for ICMP connections. Defaults to 30s if not set.
+        tcpEstablishedIdleTimeoutSec:
+          type: integer
+          description: |
+            Timeout (in seconds) for TCP established connections. Defaults to 1200s if not set.
+        tcpTransitoryIdleTimeoutSec:
+          type: integer
+          description: |
+            Timeout (in seconds) for TCP transitory connections. Defaults to 30s if not set.
+        logConfig:
+          type: object
+          additionalProperties: false
+          description: |
+            Configure logging on this NAT.
+          properties:
+            enable:
+              type: boolean
+              description: |
+                Indicates whether or not to export logs. This is false by default.
+            filter:
+              type: string
+              description: |
+                Specifies the desired filtering of logs on this NAT. If unspecified, logs are exported
+                for all connections handled by this NAT.

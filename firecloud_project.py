@@ -175,6 +175,39 @@ def create_private_google_access_dns_zone(context):
     }
   }]
 
+def create_cloud_nats(context):
+  """Creates cloud router resources with automatic NAT enabled.
+
+  Args:
+  context: the DM context object.
+
+  Returns:
+  A resource instantiating the cloud_router.py sub-template.
+  """
+  resources = []
+  for region in FIRECLOUD_NETWORK_REGIONS:
+    resources.append({
+      'type': 'templates/cloud_router.py',
+      'name': 'fc-router-' + region,
+      'properties': {
+        # We append the region to the router's DM resource name, since
+        # each resource name needs to be globally unique within the deployment.
+        'resourceName': 'fc-router-' + region,
+        # We want all routers to have the same object name, since this most
+        # closely mirrors subnet naming.
+        'name': 'fc-router',
+        'projectId': '$(ref.fc-project.projectId)',
+        'region': region,
+        'network': '$(ref.fc-network.selfLink)',
+        'dependsOn': '$(ref.fc-network.resourceNames)',
+        'nats': [{
+          'name': 'fc-nat-gateway',
+          'sourceSubnetworkIpRangesToNat': 'ALL_SUBNETWORKS_ALL_IP_RANGES',
+          'natIpAllocateOption': 'AUTO_ONLY',
+        }],
+      }
+    })
+  return resources
 
 def create_firewall(context):
   """Creates a VPC firewall config.
@@ -437,6 +470,7 @@ def generate_config(context):
   # Optional properties, with defaults.
   high_security_network = context.properties.get('highSecurityNetwork', False)
   private_ip_google_access = context.properties.get('privateIpGoogleAccess', False)
+  cloud_nat = context.properties.get('cloudNat', False)
   storage_bucket_lifecycle = context.properties.get('storageBucketLifecycle', 180)
   billing_account_friendly_name = context.properties.get('billingAccountFriendlyName', billing_account_id)
   # Use a project name if given, otherwise it's safe to fallback to use the
@@ -509,6 +543,8 @@ def generate_config(context):
     resources.extend(create_firewall(context))
     if private_ip_google_access:
       resources.extend(create_private_google_access_dns_zone(context))
+    if cloud_nat:
+      resources.extend(create_cloud_nats(context))
   else:
     resources.extend(create_default_network(context))
 

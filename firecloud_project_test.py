@@ -10,6 +10,11 @@ class FakeContext(object):
     self.properties = {}
 
 
+def resources_with_name_prefix(resources, name_prefix):
+    """Returns the resources starting with the given name prefix."""
+    return [x for x in resources if x['name'].startswith(name_prefix)]
+
+
 def resource_with_name(resources, name):
   """Returns the resource with the given name."""
   matches = [x for x in resources if x['name'] == name]
@@ -116,6 +121,34 @@ class FirecloudProjectTest(unittest.TestCase):
     # Verify that the Private Google Access DNS Zone is created
     dns_zone = resource_with_name(resources, 'fc-private-google-access-dns-zone')
     self.assertEquals(dns_zone['properties']['resourceName'], 'private-google-access-dns-zone')
+
+  def test_cloud_nat(self):
+    """Verifying changes are made with the cloudNat option."""
+    self.context.properties['highSecurityNetwork'] = True
+    self.context.properties['cloudNat'] = True
+    resources = firecloud_project.generate_config(self.context)['resources']
+
+    network = resource_with_name(resources, 'fc-network')
+    self.assertFalse(network['properties']['autoCreateSubnetworks'])
+    subregion_count = len(list(firecloud_project.FIRECLOUD_NETWORK_REGIONS.keys()))
+    self.assertEqual(len(network['properties']['subnetworks']), subregion_count)
+    routers = resources_with_name_prefix(resources, 'fc-router-')
+    self.assertEqual(len(routers), subregion_count)
+
+    # Each router has a single nat
+    for router in routers:
+        region = router['name'][10:]
+        self.assertEqual(router['properties']['resourceName'], 'fc-router-' + region)
+        self.assertEqual(router['properties']['name'], 'fc-router')
+        self.assertEqual(router['properties']['projectId'], '$(ref.fc-project.projectId)')
+        self.assertEqual(router['properties']['region'], region)
+        self.assertEqual(router['properties']['network'], '$(ref.fc-network.selfLink)')
+        self.assertEqual(router['properties']['dependsOn'], '$(ref.fc-network.resourceNames)')
+        self.assertEqual(len(router['properties']['nats']), 1)
+        nat = router['properties']['nats'][0]
+        self.assertEqual(nat['name'], 'fc-nat-gateway')
+        self.assertEqual(nat['sourceSubnetworkIpRangesToNat'], 'ALL_SUBNETWORKS_ALL_IP_RANGES')
+        self.assertEqual(nat['natIpAllocateOption'], 'AUTO_ONLY')
 
   def test_iam_policies(self):
     """Tests that IAM grants are correctly generated for FC owners & groups."""
