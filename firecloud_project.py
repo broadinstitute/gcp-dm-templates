@@ -470,7 +470,6 @@ def generate_config(context):
   # Optional properties, with defaults.
   high_security_network = context.properties.get('highSecurityNetwork', False)
   private_ip_google_access = context.properties.get('privateIpGoogleAccess', False)
-  cloud_nat = context.properties.get('cloudNat', False)
   storage_bucket_lifecycle = context.properties.get('storageBucketLifecycle', 180)
   billing_account_friendly_name = context.properties.get('billingAccountFriendlyName', billing_account_id)
   # Use a project name if given, otherwise it's safe to fallback to use the
@@ -541,10 +540,9 @@ def generate_config(context):
   if high_security_network:
     resources.extend(create_high_security_network(context))
     resources.extend(create_firewall(context))
+    resources.extend(create_cloud_nats(context))
     if private_ip_google_access:
       resources.extend(create_private_google_access_dns_zone(context))
-    if cloud_nat:
-      resources.extend(create_cloud_nats(context))
   else:
     resources.extend(create_default_network(context))
 

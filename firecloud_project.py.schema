@@ -33,11 +33,6 @@ properties:
     description: |
       The human-readable friendly name of the billing account. Optional.
       For example, Broad Institute - 1234567
-  cloudNat:
-    type: boolean
-    description: |
-      When true, the highSecurityNetwork will be configured with settings necessary
-      for a cloud nat router to be enabled in each region.
   enableFlowLogs:
     type: boolean
     description: |
