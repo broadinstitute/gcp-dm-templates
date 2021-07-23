@@ -17,10 +17,12 @@ Template Version History
     2:
       Added a privateIpGoogleAccess parameter, which fixes an issue where GCS bucket traffic could not be easily
       distinguished from internet egress. Started tracking template version numbers in project labels.
+    3.
+      Expanded default subnet CIDRs from /20 to /16.
 """
 import re
 
-FIRECLOUD_PROJECT_TEMPLATE_VERSION_ID = '2'
+FIRECLOUD_PROJECT_TEMPLATE_VERSION_ID = '3'
 
 GCP_REGIONS = ['asia-east1',
                'asia-east2',
