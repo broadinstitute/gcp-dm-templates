@@ -19,10 +19,13 @@ Template Version History
       distinguished from internet egress. Started tracking template version numbers in project labels.
     3.
       Expanded default subnet CIDRs from /20 to /16.
+    4.
+      Added routers with Cloud NAT enabled. This allows GCE instances without public IP addresses to still connect out
+      to external internet hosts such as Docker Hub.
 """
 import re
 
-FIRECLOUD_PROJECT_TEMPLATE_VERSION_ID = '3'
+FIRECLOUD_PROJECT_TEMPLATE_VERSION_ID = '4'
 
 GCP_REGIONS = ['asia-east1',
                'asia-east2',
