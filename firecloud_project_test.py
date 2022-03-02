@@ -158,11 +158,6 @@ class FirecloudProjectTest(unittest.TestCase):
             'members': ['group:proxy-group-owners@firecloud.org']
         })
     self.assertEqual(
-        policy_with_role(policies, 'roles/billing.projectManager'), {
-            'role': 'roles/billing.projectManager',
-            'members': ['group:proxy-group-owners@firecloud.org']
-        })
-    self.assertEqual(
         policy_with_role(policies, 'roles/bigquery.jobUser'), {
             'role':
                 'roles/bigquery.jobUser',
