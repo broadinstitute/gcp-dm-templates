@@ -17,6 +17,9 @@ Template Version History
     2:
       Added a privateIpGoogleAccess parameter, which fixes an issue where GCS bucket traffic could not be easily
       distinguished from internet egress. Started tracking template version numbers in project labels.
+    3:
+      Removed billing permissions for billing project owners. This is to prevent users from changing the billing account
+      on a Google Project through the Google console. Users will still be able to change the billing account through Terra.
 """
 import re
 
@@ -288,12 +291,6 @@ def create_iam_policies(context):
       {
         # Only FireCloud project owners are allowed to view the GCP project.
         'role': 'roles/viewer',
-        'members': owners_only,
-      },
-      {
-        # Owners can manage billing on the GCP project (to switch out
-        # billing accounts).
-        'role': 'roles/billing.projectManager',
         'members': owners_only,
       },
     ])
