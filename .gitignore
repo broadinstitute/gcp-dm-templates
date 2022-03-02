@@ -1,1 +1,20 @@
 *.pyc
+.python-version
+venv
+.pytest_cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+
+### VS Code ###
+.vscode/
+
+### Emacs backup files
+*.*~
+
+### Mac directory metadata
+.DS_Store
